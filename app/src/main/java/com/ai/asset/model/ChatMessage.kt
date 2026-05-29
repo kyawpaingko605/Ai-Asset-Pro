@@ -8,7 +8,7 @@ data class ChatMessage(
     val id: String,
     val text: String,
     val isUser: Boolean,
-    val timestamp: Long
+    val timestamp: Long = System.currentTimeMillis()
 ) {
     val formattedTime: String
         get() = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(timestamp))
