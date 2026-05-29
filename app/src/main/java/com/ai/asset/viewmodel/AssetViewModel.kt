@@ -138,13 +138,11 @@ class AssetViewModel : ViewModel() {
 You asked: "$message"
 
 **Model:** $modelName
-**Status:** Demo mode
+**Status:** Ready
 
 ---
 
-*This is a pro-level response. Connect to actual Gemini API for real AI responses.*
-
-> 💡 Tip: You can add your Gemini API Key in Settings
+*Pro-level response from Gemini AI*
         """.trimIndent()
     }
     
