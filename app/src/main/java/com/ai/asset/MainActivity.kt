@@ -6,10 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.*
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -440,20 +436,11 @@ fun ProTypingIndicator() {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                val dotSize = 8.dp
                 repeat(3) { index ->
-                    val delay = index * 120L
-                    val infiniteTransition = rememberInfiniteTransition()
-                    val scale by infiniteTransition.animateFloat(
-                        initialValue = 0.5f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(300, delayMillis = delay),
-                            repeatMode = RepeatMode.Reverse
-                        )
-                    )
                     Box(
                         modifier = Modifier
-                            .size((8 * scale).dp)
+                            .size(dotSize)
                             .clip(CircleShape)
                             .background(Color(0xFF0088CC))
                     )
