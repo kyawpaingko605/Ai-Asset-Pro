@@ -21,10 +21,15 @@ data class MessageEntity(
     val isUser: Boolean,
     val timestamp: Long
 ) {
-    fun toChatMessage() = ChatMessage(id, text, isUser, timestamp)
+    fun toChatMessage(): ChatMessage = ChatMessage(
+        id = id,
+        text = text,
+        isUser = isUser,
+        timestamp = timestamp
+    )
     
     companion object {
-        fun fromChatMessage(msg: ChatMessage) = MessageEntity(
+        fun fromChatMessage(msg: ChatMessage): MessageEntity = MessageEntity(
             id = msg.id,
             text = msg.text,
             isUser = msg.isUser,
@@ -43,9 +48,16 @@ interface MessageDao {
     
     @Query("DELETE FROM messages")
     suspend fun deleteAll()
+    
+    @Query("SELECT COUNT(*) FROM messages")
+    suspend fun getCount(): Int
 }
 
-@Database(entities = [MessageEntity::class], version = 1)
+@Database(
+    entities = [MessageEntity::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
     
@@ -68,7 +80,7 @@ abstract class AppDatabase : RoomDatabase() {
 }
 
 class ChatHistoryRepository(private val context: Context) {
-    private val database = AppDatabase.getInstance(context)
+    private val database: AppDatabase = AppDatabase.getInstance(context)
     
     fun loadChatHistory(): Flow<List<ChatMessage>> {
         return database.messageDao().getAllMessages().map { entities ->
@@ -82,5 +94,9 @@ class ChatHistoryRepository(private val context: Context) {
     
     suspend fun clearAllMessages() {
         database.messageDao().deleteAll()
+    }
+    
+    suspend fun getMessageCount(): Int {
+        return database.messageDao().getCount()
     }
 }
