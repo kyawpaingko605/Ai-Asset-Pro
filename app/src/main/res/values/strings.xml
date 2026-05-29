@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Asset Pro</string>
+    <string name="google_sign_in">Sign in with Google</string>
+    <string name="api_key_hint">Enter your Gemini API Key</string>
+    <string name="send">Send</string>
+    <string name="ai_thinking">AI is thinking...</string>
+    <string name="welcome_message">Welcome to AI Asset Pro</string>
+</resources>
