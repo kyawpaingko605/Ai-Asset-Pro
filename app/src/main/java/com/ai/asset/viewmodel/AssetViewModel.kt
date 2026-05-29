@@ -52,6 +52,11 @@ class AssetViewModel : ViewModel() {
         
         _isDarkTheme.value = apiKeyRepo.getThemePreference()
         
+        val savedModel = apiKeyRepo.getSelectedModel()
+        if (savedModel.isNotEmpty() && availableModels.contains(savedModel)) {
+            _currentModel.value = savedModel
+        }
+        
         viewModelScope.launch {
             historyRepo.loadChatHistory().collect { history ->
                 _chatMessages.value = history
@@ -94,9 +99,11 @@ class AssetViewModel : ViewModel() {
             try {
                 kotlinx.coroutines.delay(1500)
                 
+                val responseText = buildResponse(message, _currentModel.value)
+                
                 val aiMessage = ChatMessage(
                     id = System.currentTimeMillis().toString(),
-                    text = "**🤖 Gemini AI Response**\n\nYou asked: \"$message\"\n\nModel: ${_currentModel.value.replace("models/", "")}\n\n*This is a pro-level response with markdown support.*",
+                    text = responseText,
                     isUser = false,
                     timestamp = System.currentTimeMillis()
                 )
@@ -106,9 +113,39 @@ class AssetViewModel : ViewModel() {
                 _isAiLoading.value = false
                 
             } catch (e: Exception) {
+                val errorMessage = ChatMessage(
+                    id = System.currentTimeMillis().toString(),
+                    text = "❌ Error: ${e.message}",
+                    isUser = false,
+                    timestamp = System.currentTimeMillis()
+                )
+                _chatMessages.value = _chatMessages.value + errorMessage
                 _isAiLoading.value = false
             }
         }
+    }
+    
+    private fun buildResponse(message: String, model: String): String {
+        val modelName = model.replace("models/", "")
+            .replace("gemini-", "Gemini ")
+            .replace("-pro", " Pro")
+            .replace("-flash", " Flash")
+            .replace("-vision", " Vision")
+        
+        return """
+**🤖 Gemini AI Response**
+
+You asked: "$message"
+
+**Model:** $modelName
+**Status:** Demo mode
+
+---
+
+*This is a pro-level response. Connect to actual Gemini API for real AI responses.*
+
+> 💡 Tip: You can add your Gemini API Key in Settings
+        """.trimIndent()
     }
     
     fun clearChatHistory() {
