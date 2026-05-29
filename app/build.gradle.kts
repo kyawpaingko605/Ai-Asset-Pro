@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")
+    // id("com.google.gms.google-services")  ← Google Services ကို ခဏပိတ်ထားပါ
 }
 
 android {
@@ -55,6 +55,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.ai.client.generativeai:generativeai:0.2.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
