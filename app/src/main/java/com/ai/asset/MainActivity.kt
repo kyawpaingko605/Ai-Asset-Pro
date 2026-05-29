@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -56,16 +54,16 @@ fun AIAssetProApp(viewModel: AssetViewModel) {
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            color = if (isDarkTheme) Color(0xFF0F0F0F) else Color.White
         ) {
-            ProChatScreen(viewModel = viewModel)
+            MainChatScreen(viewModel = viewModel)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProChatScreen(viewModel: AssetViewModel) {
+fun MainChatScreen(viewModel: AssetViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
@@ -91,80 +89,47 @@ fun ProChatScreen(viewModel: AssetViewModel) {
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(36.dp)
                                 .clip(CircleShape)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(Color(0xFF0088CC), Color(0xFF00A8FF))
-                                    )
-                                ),
+                                .background(Color(0xFF0088CC)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.AutoAwesome,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        
-                        Column {
-                            Text(
-                                "AI Asset Pro",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            if (!hasValidApiKey) {
-                                Text(
-                                    "API Key required",
-                                    fontSize = 10.sp,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            "AI Asset Pro",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0088CC)
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showModelSelector = true }) {
-                        Badge(
-                            containerColor = Color(0xFF0088CC),
-                            contentColor = Color.White
-                        ) {
-                            Text("Pro", fontSize = 8.sp)
-                        }
-                        Icon(
-                            Icons.Default.ModelTraining,
-                            contentDescription = "Model",
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Icon(Icons.Default.ModelTraining, contentDescription = "Model", tint = Color(0xFF0088CC))
                     }
-                    
                     IconButton(onClick = { showApiKeyDialog = true }) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Icon(Icons.Default.VpnKey, contentDescription = "API Key", tint = Color(0xFF0088CC))
                     }
-                    
                     IconButton(onClick = { viewModel.toggleTheme() }) {
                         Icon(
-                            if (viewModel.isDarkTheme.value) Icons.Default.LightMode 
-                            else Icons.Default.DarkMode,
+                            if (viewModel.isDarkTheme.value) Icons.Default.LightMode else Icons.Default.DarkMode,
                             contentDescription = "Theme",
-                            modifier = Modifier.size(24.dp)
+                            tint = Color(0xFF0088CC)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = if (viewModel.isDarkTheme.value) Color(0xFF1F1F1F) else Color.White
                 )
             )
         }
@@ -174,6 +139,7 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Chat Messages
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -182,7 +148,7 @@ fun ProChatScreen(viewModel: AssetViewModel) {
             ) {
                 if (chatMessages.isEmpty()) {
                     item {
-                        ProWelcomeCard()
+                        WelcomeCard()
                     }
                 }
                 
@@ -190,30 +156,24 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                     items = chatMessages,
                     key = { it.id }
                 ) { message ->
-                    ProChatBubble(
+                    ChatBubble(
                         message = message,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(message.text))
-                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                        },
-                        onShare = {
-                            Toast.makeText(context, "Share feature coming soon", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
                 
                 if (isAiLoading) {
                     item {
-                        ProTypingIndicator()
+                        TypingIndicator()
                     }
                 }
             }
             
-            if (!hasValidApiKey) {
-                ProApiKeyWarning(onClick = { showApiKeyDialog = true })
-            }
-            
-            ProInputArea(
+            // Input Area
+            InputArea(
                 inputText = inputText,
                 onInputChange = { inputText = it },
                 onSend = {
@@ -225,13 +185,15 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                         }
                     }
                 },
-                isEnabled = hasValidApiKey && !isAiLoading
+                isEnabled = hasValidApiKey && !isAiLoading,
+                showKeyWarning = !hasValidApiKey
             )
         }
     }
     
+    // Model Selector Dialog
     if (showModelSelector) {
-        ProModelSelectorDialog(
+        ModelSelectorDialog(
             currentModel = currentModel,
             models = availableModels,
             onSelect = { model ->
@@ -242,12 +204,14 @@ fun ProChatScreen(viewModel: AssetViewModel) {
         )
     }
     
+    // API Key Dialog (တစ်နေရာတည်း)
     if (showApiKeyDialog) {
-        ProApiKeyDialog(
+        ApiKeyDialog(
             currentKey = viewModel.geminiApiKey.value,
             onSave = { key ->
                 viewModel.saveApiKey(context, key)
                 showApiKeyDialog = false
+                Toast.makeText(context, "API Key Saved", Toast.LENGTH_SHORT).show()
             },
             onDismiss = { showApiKeyDialog = false }
         )
@@ -255,56 +219,41 @@ fun ProChatScreen(viewModel: AssetViewModel) {
 }
 
 @Composable
-fun ProWelcomeCard() {
+fun WelcomeCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            containerColor = Color(0xFFE3F2FD)
         )
     ) {
         Column(
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(70.dp)
                     .clip(CircleShape)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFF0088CC), Color(0xFF00A8FF))
-                        )
-                    ),
+                    .background(Color(0xFF0088CC)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
-                )
+                Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                "AI Assistant",
-                fontSize = 24.sp,
+                "AI Asset Pro",
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = Color(0xFF0088CC)
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 "Powered by Google Gemini AI",
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 color = Color.Gray
             )
-            
             Spacer(modifier = Modifier.height(16.dp))
-            
             Text(
                 text = "• Multiple AI Models Available\n• Chat History Saved Locally\n• Markdown Support\n• Dark/Light Mode",
                 fontSize = 12.sp,
@@ -316,11 +265,7 @@ fun ProWelcomeCard() {
 }
 
 @Composable
-fun ProChatBubble(
-    message: ChatMessage,
-    onCopy: () -> Unit,
-    onShare: () -> Unit
-) {
+fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
     val isUser = message.isUser
     var showMenu by remember { mutableStateOf(false) }
     
@@ -333,44 +278,34 @@ fun ProChatBubble(
                 .widthIn(max = 280.dp)
                 .clip(
                     RoundedCornerShape(
-                        topStart = 20.dp,
-                        topEnd = 20.dp,
-                        bottomStart = if (isUser) 20.dp else 6.dp,
-                        bottomEnd = if (isUser) 6.dp else 20.dp
+                        topStart = 18.dp,
+                        topEnd = 18.dp,
+                        bottomStart = if (isUser) 18.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 18.dp
                     )
                 )
-                .background(
-                    if (isUser) Color(0xFF0088CC) 
-                    else MaterialTheme.colorScheme.surfaceVariant
-                )
+                .background(if (isUser) Color(0xFF0088CC) else Color(0xFFE3F2FD))
                 .clickable { showMenu = !showMenu }
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 if (!isUser) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.AutoAwesome,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(12.dp),
                             tint = Color(0xFF0088CC)
                         )
-                        Text(
-                            "Gemini AI",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0088CC)
-                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("AI", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
                 
                 Text(
                     text = message.text,
                     fontSize = 14.sp,
-                    color = if (isUser) Color.White else MaterialTheme.colorScheme.onSurface,
+                    color = if (isUser) Color.White else Color(0xFF1A1A1A),
                     lineHeight = 20.sp
                 )
                 
@@ -379,7 +314,7 @@ fun ProChatBubble(
                 Text(
                     text = message.formattedTime,
                     fontSize = 9.sp,
-                    color = if (isUser) Color.White.copy(alpha = 0.6f) else Color.Gray,
+                    color = if (isUser) Color.White.copy(alpha = 0.7f) else Color.Gray,
                     modifier = Modifier.align(Alignment.End)
                 )
             }
@@ -395,52 +330,31 @@ fun ProChatBubble(
                     onCopy()
                     showMenu = false
                 },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Share", fontSize = 13.sp) },
-                onClick = {
-                    onShare()
-                    showMenu = false
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                leadingIcon = { Icon(Icons.Default.ContentCopy, modifier = Modifier.size(18.dp)) }
             )
         }
     }
 }
 
 @Composable
-fun ProTypingIndicator() {
+fun TypingIndicator() {
     Row(
         modifier = Modifier.padding(start = 12.dp),
         horizontalArrangement = Arrangement.Start
     ) {
         Surface(
-            shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 6.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp),
+            color = Color(0xFFE3F2FD),
             modifier = Modifier.widthIn(min = 60.dp)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val dotSize = 8.dp
-                repeat(3) { index ->
+                repeat(3) {
                     Box(
                         modifier = Modifier
-                            .size(dotSize)
+                            .size(7.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF0088CC))
                     )
@@ -451,63 +365,83 @@ fun ProTypingIndicator() {
 }
 
 @Composable
-fun ProInputArea(
+fun InputArea(
     inputText: String,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
-    isEnabled: Boolean
+    isEnabled: Boolean,
+    showKeyWarning: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 8.dp,
-        tonalElevation = 3.dp,
-        color = MaterialTheme.colorScheme.surface
+        shadowElevation = 4.dp,
+        color = Color.White
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = onInputChange,
-                placeholder = {
-                    Text(
-                        if (isEnabled) "Message AI Assistant..." else "Enter API Key first",
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(28.dp),
-                enabled = isEnabled,
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF0088CC),
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp)
-            )
+        Column {
+            if (showKeyWarning) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFFF3E0))
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.VpnKey, tint = Color(0xFFFF9800), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add API Key to chat", fontSize = 12.sp, color = Color(0xFFFF9800))
+                    }
+                    IconButton(onClick = { /* Will be handled by parent */ }) {
+                        Icon(Icons.Default.Settings, tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
             
-            AnimatedVisibility(
-                visible = inputText.isNotBlank(),
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FloatingActionButton(
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = onInputChange,
+                    placeholder = {
+                        Text(
+                            if (isEnabled) "Message AI Asset Pro..." else "Enter API Key first",
+                            fontSize = 14.sp
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(28.dp),
+                    enabled = true,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0088CC),
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
+                )
+                
+                IconButton(
                     onClick = onSend,
-                    modifier = Modifier.size(44.dp),
-                    containerColor = Color(0xFF0088CC),
-                    shape = CircleShape
+                    enabled = inputText.isNotBlank() && isEnabled,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (inputText.isNotBlank() && isEnabled) Color(0xFF0088CC) 
+                            else Color(0xFFE0E0E0)
+                        )
                 ) {
                     Icon(
                         Icons.Default.Send,
                         contentDescription = "Send",
                         tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -516,49 +450,7 @@ fun ProInputArea(
 }
 
 @Composable
-fun ProApiKeyWarning(onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = Color(0xFFFF9800).copy(alpha = 0.15f)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = Color(0xFFFF9800),
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    "Gemini API Key required",
-                    fontSize = 13.sp,
-                    color = Color(0xFFFF9800)
-                )
-            }
-            
-            Button(
-                onClick = onClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0088CC)),
-                shape = RoundedCornerShape(20.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                Text("Add Key", fontSize = 12.sp, color = Color.White)
-            }
-        }
-    }
-}
-
-@Composable
-fun ProModelSelectorDialog(
+fun ModelSelectorDialog(
     currentModel: String,
     models: List<String>,
     onSelect: (String) -> Unit,
@@ -566,35 +458,15 @@ fun ProModelSelectorDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    Icons.Default.ModelTraining,
-                    contentDescription = null,
-                    tint = Color(0xFF0088CC)
-                )
-                Text("Select AI Model", fontWeight = FontWeight.Bold)
-            }
-        },
+        title = { Text("Select AI Model", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text(
-                    "Choose which Gemini model to use",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                
                 models.forEach { model ->
                     val displayName = model.replace("models/", "")
                         .replace("gemini-", "Gemini ")
                         .replace("-pro", " Pro")
                         .replace("-flash", " Flash")
                         .replace("-vision", " Vision")
-                        .replace("1.5", "1.5")
                     
                     Card(
                         modifier = Modifier
@@ -609,32 +481,12 @@ fun ProModelSelectorDialog(
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Text(
-                                    displayName,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    when {
-                                        model.contains("pro") -> "Best for complex tasks"
-                                        model.contains("flash") -> "Fast & efficient"
-                                        else -> "Balanced performance"
-                                    },
-                                    fontSize = 10.sp,
-                                    color = Color.Gray
-                                )
-                            }
+                            Text(displayName, fontSize = 14.sp)
                             if (currentModel == model) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = Color(0xFF0088CC),
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Icon(Icons.Default.CheckCircle, tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -643,15 +495,15 @@ fun ProModelSelectorDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = Color.Gray)
+                Text("Close", color = Color(0xFF0088CC))
             }
         },
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(16.dp)
     )
 }
 
 @Composable
-fun ProApiKeyDialog(
+fun ApiKeyDialog(
     currentKey: String,
     onSave: (String) -> Unit,
     onDismiss: () -> Unit
@@ -661,27 +513,14 @@ fun ProApiKeyDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    Icons.Default.VpnKey,
-                    contentDescription = null,
-                    tint = Color(0xFF0088CC)
-                )
-                Text("Gemini API Key", fontWeight = FontWeight.Bold)
-            }
-        },
+        title = { Text("Gemini API Key", fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Text(
-                    "Get your free API key from Google AI Studio",
+                    "Get your free API key from:",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     "https://aistudio.google.com",
                     fontSize = 11.sp,
@@ -723,7 +562,7 @@ fun ProApiKeyDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0088CC)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Save API Key", color = Color.White)
+                Text("Save API Key", color = Color.White, fontSize = 13.sp)
             }
         },
         dismissButton = {
@@ -731,6 +570,6 @@ fun ProApiKeyDialog(
                 Text("Cancel", color = Color.Gray)
             }
         },
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(16.dp)
     )
 }
