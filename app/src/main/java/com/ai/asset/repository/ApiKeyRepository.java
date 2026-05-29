@@ -17,6 +17,11 @@ class ApiKeyRepository(private val context: Context) {
         return prefs.getString("gemini_api_key", "") ?: ""
     }
     
+    fun hasValidApiKey(): Boolean {
+        val key = getApiKey()
+        return key.isNotEmpty() && key.startsWith("AIza") && key.length > 20
+    }
+    
     fun saveSelectedModel(model: String) {
         prefs.edit().putString("selected_model", model).apply()
     }
@@ -31,5 +36,9 @@ class ApiKeyRepository(private val context: Context) {
     
     fun getThemePreference(): Boolean {
         return prefs.getBoolean("dark_theme", false)
+    }
+    
+    fun clearAll() {
+        prefs.edit().clear().apply()
     }
 }
