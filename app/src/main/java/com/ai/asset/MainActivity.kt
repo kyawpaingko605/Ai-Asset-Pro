@@ -6,6 +6,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.*
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -81,7 +85,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
     val currentModel by viewModel.currentModel.collectAsStateWithLifecycle()
     val availableModels = viewModel.availableModels
     
-    // Auto scroll to bottom when new message arrives
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty()) {
             listState.animateScrollToItem(chatMessages.size - 1)
@@ -96,7 +99,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Logo
                         Box(
                             modifier = Modifier
                                 .size(38.dp)
@@ -134,7 +136,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                     }
                 },
                 actions = {
-                    // Model Selector Button
                     IconButton(onClick = { showModelSelector = true }) {
                         Badge(
                             containerColor = Color(0xFF0088CC),
@@ -149,7 +150,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                         )
                     }
                     
-                    // Settings Button (API Key)
                     IconButton(onClick = { showApiKeyDialog = true }) {
                         Icon(
                             Icons.Default.Settings,
@@ -158,7 +158,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                         )
                     }
                     
-                    // Theme Toggle Button
                     IconButton(onClick = { viewModel.toggleTheme() }) {
                         Icon(
                             if (viewModel.isDarkTheme.value) Icons.Default.LightMode 
@@ -179,21 +178,18 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Chat Messages List
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Welcome Card when no messages
                 if (chatMessages.isEmpty()) {
                     item {
                         ProWelcomeCard()
                     }
                 }
                 
-                // Chat Messages
                 items(
                     items = chatMessages,
                     key = { it.id }
@@ -205,13 +201,11 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                             Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                         },
                         onShare = {
-                            // Share intent would go here
                             Toast.makeText(context, "Share feature coming soon", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
                 
-                // Typing Indicator
                 if (isAiLoading) {
                     item {
                         ProTypingIndicator()
@@ -219,12 +213,10 @@ fun ProChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // API Key Warning Banner
             if (!hasValidApiKey) {
                 ProApiKeyWarning(onClick = { showApiKeyDialog = true })
             }
             
-            // Input Area
             ProInputArea(
                 inputText = inputText,
                 onInputChange = { inputText = it },
@@ -242,7 +234,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
         }
     }
     
-    // Model Selector Dialog
     if (showModelSelector) {
         ProModelSelectorDialog(
             currentModel = currentModel,
@@ -255,7 +246,6 @@ fun ProChatScreen(viewModel: AssetViewModel) {
         )
     }
     
-    // API Key Dialog
     if (showApiKeyDialog) {
         ProApiKeyDialog(
             currentKey = viewModel.geminiApiKey.value,
@@ -281,7 +271,6 @@ fun ProWelcomeCard() {
             modifier = Modifier.padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -361,7 +350,6 @@ fun ProChatBubble(
                 .clickable { showMenu = !showMenu }
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
-                // AI Label (only for AI messages)
                 if (!isUser) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -383,7 +371,6 @@ fun ProChatBubble(
                     Spacer(modifier = Modifier.height(6.dp))
                 }
                 
-                // Message Text
                 Text(
                     text = message.text,
                     fontSize = 14.sp,
@@ -393,7 +380,6 @@ fun ProChatBubble(
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Timestamp
                 Text(
                     text = message.formattedTime,
                     fontSize = 9.sp,
@@ -403,7 +389,6 @@ fun ProChatBubble(
             }
         }
         
-        // Context Menu (Copy, Share)
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
@@ -457,19 +442,18 @@ fun ProTypingIndicator() {
             ) {
                 repeat(3) { index ->
                     val delay = index * 120L
-                    val infiniteTransition = rememberInfiniteTransition(label = "typing")
+                    val infiniteTransition = rememberInfiniteTransition()
                     val scale by infiniteTransition.animateFloat(
                         initialValue = 0.5f,
                         targetValue = 1f,
                         animationSpec = infiniteRepeatable(
                             animation = tween(300, delayMillis = delay),
                             repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "scale"
+                        )
                     )
                     Box(
                         modifier = Modifier
-                            .size(8.dp * scale)
+                            .size((8 * scale).dp)
                             .clip(CircleShape)
                             .background(Color(0xFF0088CC))
                     )
@@ -499,7 +483,6 @@ fun ProInputArea(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Text Input Field
             OutlinedTextField(
                 value = inputText,
                 onValueChange = onInputChange,
@@ -522,7 +505,6 @@ fun ProInputArea(
                 textStyle = LocalTextStyle.current.copy(fontSize = 15.sp)
             )
             
-            // Send Button (with animation)
             AnimatedVisibility(
                 visible = inputText.isNotBlank(),
                 enter = fadeIn() + scaleIn(),
