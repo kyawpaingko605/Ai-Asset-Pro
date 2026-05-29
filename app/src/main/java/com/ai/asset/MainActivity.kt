@@ -13,8 +13,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,7 +78,6 @@ fun ChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Chat list
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
@@ -94,7 +98,6 @@ fun ChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // Input area
             Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -132,7 +135,7 @@ fun ChatScreen(viewModel: AssetViewModel) {
                             else Color.Gray.copy(alpha = 0.3f)
                         )
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+                    Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
                 }
             }
         }
