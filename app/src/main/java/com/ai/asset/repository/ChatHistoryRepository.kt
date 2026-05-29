@@ -10,6 +10,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import com.ai.asset.model.ChatMessage
 
 @Entity(tableName = "messages")
@@ -21,6 +22,7 @@ data class MessageEntity(
     val timestamp: Long
 ) {
     fun toChatMessage() = ChatMessage(id, text, isUser, timestamp)
+    
     companion object {
         fun fromChatMessage(msg: ChatMessage) = MessageEntity(
             id = msg.id,
@@ -69,11 +71,8 @@ class ChatHistoryRepository(private val context: Context) {
     private val database = AppDatabase.getInstance(context)
     
     fun loadChatHistory(): Flow<List<ChatMessage>> {
-        return database.messageDao().getAllMessages().let { flow ->
-            // Convert Flow<List<MessageEntity>> to Flow<List<ChatMessage>>
-            androidx.lifecycle.asFlow(flow) { entities ->
-                entities.map { it.toChatMessage() }
-            }
+        return database.messageDao().getAllMessages().map { entities ->
+            entities.map { it.toChatMessage() }
         }
     }
     
