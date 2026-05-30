@@ -14,12 +14,15 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        
+        // ✨ FIX: Library ပေါင်းများစွာကြောင့် ဖြစ်ပေါ်လာမည့် Multidex Error ကို ကာကွယ်ရန်
+        multiDexEnabled = true 
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true // ကုဒ်တွေကို Obfuscate လုပ်ပြီး Size သေးအောင်လုပ်ခြင်း
-            isShrinkResources = true // မလိုအပ်တဲ့ resource တွေကို ဖယ်ရှားခြင်း
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,7 +44,6 @@ android {
     }
     
     composeOptions {
-        // Kotlin 1.9.20 နဲ့ တွဲဖက်သုံးနိုင်ရန် Version အမှန်ဖြစ်ပါသည်
         kotlinCompilerExtensionVersion = "1.5.4"
     }
 }
@@ -50,6 +52,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.0")
+    
+    // ✨ FIX: Multidex ကို ထည့်သွင်းခြင်း
+    implementation("androidx.multidex:multidex:2.0.1")
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))
@@ -68,8 +73,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     
-    // ✨ FIX: Gemini SDK ကို 0.2.0 မှ 0.9.0 သို့ အဆင့်မြှင့်တင်ထားပါသည်
-    // ဒါမှသာ gemini-1.5-pro / flash တို့ကို အသုံးပြုနိုင်မှာ ဖြစ်ပါတယ်
+    // ✨ FIX: Gemini SDK ဗားရှင်းအသစ်သို့ ပြင်ဆင်ခြင်း
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     
     // Security
