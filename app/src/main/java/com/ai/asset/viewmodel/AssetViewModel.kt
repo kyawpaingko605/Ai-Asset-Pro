@@ -47,10 +47,11 @@ class AssetViewModel : ViewModel() {
         apiKeyRepo = ApiKeyRepository(context)
         historyRepo = ChatHistoryRepository(context)
         
-        val savedKey = apiKeyRepo.getApiKey()
+        val savedKey = apiKeyRepo.getApiKey().trim() // အဖြူအကွက်လပ်များ ဖြတ်ထုတ်ခြင်း
         if (savedKey.isNotEmpty()) {
             _geminiApiKey.value = savedKey
-            _hasValidApiKey.value = savedKey.startsWith("AIza") && savedKey.length > 20
+            // စာလုံးအရှည် ၂၀ ကျော်ပြီး "AIza" နဲ့ စမစ စိတ်ချရအောင် စစ်ဆေးခြင်း
+            _hasValidApiKey.value = savedKey.length > 20 && savedKey.startsWith("AIza")
         }
         
         _isDarkTheme.value = apiKeyRepo.getThemePreference()
@@ -78,13 +79,14 @@ class AssetViewModel : ViewModel() {
     }
     
     fun saveApiKey(context: Context, key: String) {
-        apiKeyRepo.saveApiKey(key)
-        _geminiApiKey.value = key
-        _hasValidApiKey.value = key.startsWith("AIza") && key.length > 20
+        val cleanedKey = key.trim() // ✨ ကီးရိုက်ထည့်ရာတွင် ပါလာမည့် Space (ကွက်လပ်) များကို အလိုအလျောက် ဖြတ်ထုတ်ပေးခြင်း
+        apiKeyRepo.saveApiKey(cleanedKey)
+        _geminiApiKey.value = cleanedKey
+        // ✨ စစ်ဆေးချက်ကို ပိုမိုစိတ်ချရအောင် ပြင်ဆင်ထားပါသည်
+        _hasValidApiKey.value = cleanedKey.length > 20 && cleanedKey.startsWith("AIza")
     }
     
     fun sendMessage(message: String) {
-        // Create user message
         val userMessage = ChatMessage(
             id = System.currentTimeMillis().toString(),
             text = message,
@@ -92,13 +94,11 @@ class AssetViewModel : ViewModel() {
             timestamp = System.currentTimeMillis()
         )
         
-        // Add to UI and save to database
         _chatMessages.value = _chatMessages.value + userMessage
         viewModelScope.launch {
             historyRepo.saveMessage(userMessage)
         }
         
-        // Check if API key is valid
         if (!_hasValidApiKey.value) {
             val errorMessage = ChatMessage(
                 id = System.currentTimeMillis().toString(),
@@ -112,7 +112,6 @@ class AssetViewModel : ViewModel() {
         
         _isAiLoading.value = true
         
-        // Call Gemini API
         viewModelScope.launch {
             try {
                 val response = callGeminiApi(message)
@@ -141,20 +140,17 @@ class AssetViewModel : ViewModel() {
         }
     }
     
-    // Real Gemini API Call - Supports Burmese/Myanmar Language
     private suspend fun callGeminiApi(prompt: String): String {
         return withContext(Dispatchers.IO) {
             try {
                 val apiKey = _geminiApiKey.value
                 val modelName = _currentModel.value
                 
-                // Create Gemini model instance
                 val generativeModel = GenerativeModel(
                     modelName = modelName,
                     apiKey = apiKey
                 )
                 
-                // System instruction to support Burmese language
                 val systemPrompt = """
                     You are a helpful AI assistant. You can understand and respond in Burmese (Myanmar language) fluently.
                     You should respond in the same language as the user's question.
@@ -163,7 +159,6 @@ class AssetViewModel : ViewModel() {
                     Be helpful, accurate, and concise.
                 """.trimIndent()
                 
-                // Send message with context
                 val chat = generativeModel.startChat()
                 val response = chat.sendMessage(prompt)
                 
