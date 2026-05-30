@@ -1,4 +1,4 @@
-package com.ai.asset.viewmodel // ✨ FIX: 'Package' မှ 'package' သို့ ပြင်ဆင်ပြီး
+package com.ai.asset.viewmodel // ✨ FIX: စာလုံးအသေးဖြင့်သာ သုံးရပါမည်
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -54,7 +54,6 @@ class AssetViewModel : ViewModel() {
         val savedKey = apiKeyRepo.getApiKey().trim()
         if (savedKey.isNotEmpty()) {
             _geminiApiKey.value = savedKey
-            // ✨ FIX: Gemini Key အသစ်များသည် AIza နှင့် မစတတ်သဖြင့် Length တစ်ခုတည်းဖြင့် စစ်ဆေးရန် ပြင်ဆင်ထားပါသည်
             _hasValidApiKey.value = savedKey.length > 20
         }
         
@@ -90,7 +89,6 @@ class AssetViewModel : ViewModel() {
         val cleanedKey = key.trim()
         apiKeyRepo.saveApiKey(cleanedKey)
         _geminiApiKey.value = cleanedKey
-        // ✨ FIX: Key အသစ်များ ဝင်ဆံ့စေရန် လိုအပ်သလို ဖြေလျှော့ပြင်ဆင်ထားပါသည်
         _hasValidApiKey.value = cleanedKey.length > 20
     }
     
@@ -167,8 +165,10 @@ class AssetViewModel : ViewModel() {
     private suspend fun callGeminiApi(prompt: String, bitmap: Bitmap?): String {
         return withContext(Dispatchers.IO) {
             try {
+                // ✨ FIX: modelName ကို အမြဲတမ်း 'models/' prefix မပါအောင် သေချာအောင်လုပ်ထားသည်
+                val modelName = _currentModel.value.replace("models/", "")
                 val generativeModel = GenerativeModel(
-                    modelName = _currentModel.value,
+                    modelName = modelName,
                     apiKey = _geminiApiKey.value
                 )
                 
@@ -179,8 +179,7 @@ class AssetViewModel : ViewModel() {
                     }
                     generativeModel.generateContent(inputContent)
                 } else {
-                    val chat = generativeModel.startChat()
-                    chat.sendMessage(prompt)
+                    generativeModel.generateContent(prompt)
                 }
                 
                 response.text ?: "AI မှ တုံ့ပြန်မှု မရှိပါ။ ထပ်မံကြိုးစားကြည့်ပါ။"
