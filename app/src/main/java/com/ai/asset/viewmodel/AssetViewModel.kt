@@ -1,178 +1,64 @@
-package com.ai.asset.viewmodel
-
-import android.content.Context
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.ai.asset.model.ChatMessage
-import com.ai.asset.repository.ApiKeyRepository
-import com.ai.asset.repository.ChatHistoryRepository
-import com.google.ai.client.generativeai.GenerativeModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-class AssetViewModel : ViewModel() {
-    
-    val availableModels = listOf(
-        "models/gemini-1.5-pro",
-        "models/gemini-1.5-flash", 
-        "models/gemini-pro"
+fun sendMessage(message: String) {
+    val userMessage = ChatMessage(
+        id = System.currentTimeMillis().toString(),
+        text = message,
+        isUser = true,
+        timestamp = System.currentTimeMillis()
     )
     
-    private val _currentModel = MutableStateFlow(availableModels[0])
-    val currentModel: StateFlow<String> = _currentModel
+    // ၁။ UI ပေါ်မှာ အသုံးပြုသူပို့တဲ့စာကို ချက်ချင်း အရင်ပြလိုက်မယ်
+    _chatMessages.value = _chatMessages.value + userMessage
     
-    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
-    val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages
-    
-    private val _isAiLoading = MutableStateFlow(false)
-    val isAiLoading: StateFlow<Boolean> = _isAiLoading
-    
-    private val _hasValidApiKey = MutableStateFlow(false)
-    val hasValidApiKey: StateFlow<Boolean> = _hasValidApiKey
-    
-    private val _geminiApiKey = MutableStateFlow("")
-    val geminiApiKey: StateFlow<String> = _geminiApiKey
-    
-    private val _isDarkTheme = MutableStateFlow(false)
-    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme
-    
-    private lateinit var apiKeyRepo: ApiKeyRepository
-    private lateinit var historyRepo: ChatHistoryRepository
-    
-    fun initData(context: Context) {
-        apiKeyRepo = ApiKeyRepository(context)
-        historyRepo = ChatHistoryRepository(context)
-        
-        val savedKey = apiKeyRepo.getApiKey().trim()
-        _geminiApiKey.value = savedKey
-        // ✨ အမြဲတမ်း တိကျစွာ အမှားအမှန် စစ်ဆေးနိုင်ရန် if အပြင်ဘက်သို့ ထုတ်ထားပါသည်
-        _hasValidApiKey.value = savedKey.isNotEmpty() && savedKey.length > 20 && savedKey.startsWith("AIza")
-        
-        _isDarkTheme.value = apiKeyRepo.getThemePreference()
-        
-        val savedModel = apiKeyRepo.getSelectedModel()
-        if (savedModel.isNotEmpty() && availableModels.contains(savedModel)) {
-            _currentModel.value = savedModel
-        }
-        
-        viewModelScope.launch {
-            historyRepo.loadChatHistory().collect { history ->
-                _chatMessages.value = history
-            }
-        }
+    // Database သိမ်းတာကို နောက်ကွယ်ကနေ သီးသန့်လုပ်ခိုင်းမယ် (UI ကို မပိတ်ဆို့တော့ဘူး)
+    viewModelScope.launch(Dispatchers.IO) {
+        try { historyRepo.saveMessage(userMessage) } catch (e: Exception) {}
     }
     
-    fun toggleTheme() {
-        _isDarkTheme.value = !_isDarkTheme.value
-        apiKeyRepo.saveThemePreference(_isDarkTheme.value)
-    }
-    
-    fun updateModel(model: String) {
-        _currentModel.value = model
-        apiKeyRepo.saveSelectedModel(model)
-    }
-    
-    fun saveApiKey(context: Context, key: String) {
-        val cleanedKey = key.trim()
-        apiKeyRepo.saveApiKey(cleanedKey)
-        _geminiApiKey.value = cleanedKey
-        _hasValidApiKey.value = cleanedKey.isNotEmpty() && cleanedKey.length > 20 && cleanedKey.startsWith("AIza")
-    }
-    
-    fun sendMessage(message: String) {
-        val userMessage = ChatMessage(
+    // ၂။ Key ရှိမရှိ စစ်မယ်
+    if (_geminiApiKey.value.isBlank()) {
+        val noKeyMessage = ChatMessage(
             id = System.currentTimeMillis().toString(),
-            text = message,
-            isUser = true,
+            text = "⚠️ API Key မထည့်ရသေးပါ။ ညာဘက်အပေါ်က သော့ပုံစံ Settings ထဲမှာ အရင်ထည့်ပေးပါဗျာ။",
+            isUser = false,
             timestamp = System.currentTimeMillis()
         )
-        
-        _chatMessages.value = _chatMessages.value + userMessage
-        viewModelScope.launch {
-            historyRepo.saveMessage(userMessage)
-        }
-        
-        if (!_hasValidApiKey.value) {
+        _chatMessages.value = _chatMessages.value + noKeyMessage
+        return
+    }
+    
+    // ၃။ Loading ပြပြီး Gemini AI ဆီ တန်းခေါ်မယ်
+    _isAiLoading.value = true
+    
+    viewModelScope.launch(Dispatchers.Main) {
+        try {
+            // AI ဆီက အဖြေကို တိုက်ရိုက်တောင်းမယ်
+            val response = callGeminiApi(message)
+            
+            val aiMessage = ChatMessage(
+                id = System.currentTimeMillis().toString(),
+                text = response,
+                isUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            
+            // AI အဖြေကို UI ပေါ် တင်ပေးမယ်
+            _chatMessages.value = _chatMessages.value + aiMessage
+            
+            // AI အဖြေကို နောက်ကွယ်ကနေ Database ထဲ သိမ်းမယ်
+            viewModelScope.launch(Dispatchers.IO) {
+                try { historyRepo.saveMessage(aiMessage) } catch (e: Exception) {}
+            }
+            
+        } catch (e: Exception) {
             val errorMessage = ChatMessage(
                 id = System.currentTimeMillis().toString(),
-                text = "⚠️ ကျေးဇူးပြု၍ သင့် Gemini API Key ကို Settings တွင် ထည့်သွင်းပါ။\n\nPlease enter your Gemini API Key in Settings.",
+                text = "❌ App Error: ${e.localizedMessage}",
                 isUser = false,
                 timestamp = System.currentTimeMillis()
             )
             _chatMessages.value = _chatMessages.value + errorMessage
-            return
-        }
-        
-        _isAiLoading.value = true
-        
-        viewModelScope.launch {
-            try {
-                val response = callGeminiApi(message)
-                
-                val aiMessage = ChatMessage(
-                    id = System.currentTimeMillis().toString(),
-                    text = response,
-                    isUser = false,
-                    timestamp = System.currentTimeMillis()
-                )
-                
-                _chatMessages.value = _chatMessages.value + aiMessage
-                historyRepo.saveMessage(aiMessage)
-                _isAiLoading.value = false
-                
-            } catch (e: Exception) {
-                val errorMessage = ChatMessage(
-                    id = System.currentTimeMillis().toString(),
-                    text = "❌ Error: ${e.message}\n\nကျေးဇူးပြု၍ သင်၏ အင်တာနက်ချိတ်ဆက်မှုနှင့် API Key ကို စစ်ဆေးပါ။",
-                    isUser = false,
-                    timestamp = System.currentTimeMillis()
-                )
-                _chatMessages.value = _chatMessages.value + errorMessage
-                _isAiLoading.value = false
-            }
-        }
-    }
-    
-    private suspend fun callGeminiApi(prompt: String): String {
-        return withContext(Dispatchers.IO) {
-            try {
-                val apiKey = _geminiApiKey.value
-                val modelName = _currentModel.value
-                
-                val generativeModel = GenerativeModel(
-                    modelName = modelName,
-                    apiKey = apiKey
-                )
-                
-                // ✨ Multi-turn Chat အစား ပိုမိုမြန်ဆန်သေချာသော generateContent ကို ပြောင်းသုံးပြီး System Instruction ပါ တစ်ခါတည်း ထည့်သွင်းထားပါသည်
-                val fullPrompt = """
-                    System Instruction: You are a helpful AI assistant. You can understand and respond in Burmese (Myanmar language) fluently. You should respond in the same language as the user's question. If user asks in Burmese, respond in Burmese. If user asks in English, respond in English. Be helpful, accurate, and concise.
-                    
-                    User: $prompt
-                """.trimIndent()
-                
-                val response = generativeModel.generateContent(fullPrompt)
-                response.text ?: "No response from AI. Please try again."
-                
-            } catch (e: Exception) {
-                val errorMsg = e.message ?: ""
-                when {
-                    errorMsg.contains("403") -> "⚠️ API Key မမှန်ကန်ပါ။ ကျေးဇူးပြု၍ သင်၏ Gemini API Key ကို စစ်ဆေးပါ။"
-                    errorMsg.contains("429") -> "⚠️ Request အများကြီးပို့မိပါသည်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။"
-                    errorMsg.contains("404") -> "⚠️ AI Model ကို မတွေ့ပါ။ အခြား Model ကို ရွေးချယ်ပါ။"
-                    else -> "❌ Error: ${e.message}\n\nPlease check your internet connection and try again."
-                }
-            }
-        }
-    }
-    
-    fun clearChatHistory() {
-        _chatMessages.value = emptyList()
-        viewModelScope.launch {
-            historyRepo.clearAllMessages()
+        } finally {
+            _isAiLoading.value = false
         }
     }
 }
