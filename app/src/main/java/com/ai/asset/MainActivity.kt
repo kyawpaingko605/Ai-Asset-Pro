@@ -113,9 +113,9 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                                 color = Color(0xFF0088CC)
                             )
                             Text(
-                                if (hasValidApiKey) "AI Ready" else "API Key Required",
+                                if (hasValidApiKey) "● AI Ready" else "⚠️ API Key Required",
                                 fontSize = 11.sp,
-                                color = if (hasValidApiKey) Color(0xFF4CAF50) else Color.Gray
+                                color = if (hasValidApiKey) Color(0xFF4CAF50) else Color(0xFFFF9800)
                             )
                         }
                     }
@@ -146,6 +146,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Chat Messages Area
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -153,31 +154,25 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (chatMessages.isEmpty()) {
-                    item {
-                        WelcomeCard()
-                    }
+                    item { WelcomeCard(hasValidApiKey) }
                 }
                 
-                items(
-                    items = chatMessages,
-                    key = { it.id }
-                ) { message ->
+                items(chatMessages, key = { it.id }) { message ->
                     ChatBubble(
                         message = message,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(message.text))
-                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
                 
                 if (isAiLoading) {
-                    item {
-                        TypingIndicator()
-                    }
+                    item { TypingIndicator() }
                 }
             }
             
+            // API Key Warning Card (Only show when no API key)
             if (!hasValidApiKey) {
                 Card(
                     modifier = Modifier
@@ -195,13 +190,14 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.VpnKey, contentDescription = "Key", tint = Color(0xFFFF9800), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Add Gemini API Key", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFFFF9800))
+                            Text("Add Gemini API Key to start chatting", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFFFF9800))
                         }
                         Icon(Icons.Default.ArrowForward, contentDescription = "Go", tint = Color(0xFFFF9800), modifier = Modifier.size(18.dp))
                     }
                 }
             }
             
+            // Input Area - FIXED: Send button works now
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp,
@@ -214,12 +210,13 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Text Input Field
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
                         placeholder = {
                             Text(
-                                if (hasValidApiKey) "Type your message..." else "Enter API Key first",
+                                if (hasValidApiKey) "Type your message in Burmese or English..." else "Enter API Key first",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
@@ -233,32 +230,37 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                             unfocusedBorderColor = Color(0xFFE0E0E0),
                             focusedContainerColor = if (viewModel.isDarkTheme.value) Color(0xFF2D2D2D) else Color.White,
                             unfocusedContainerColor = if (viewModel.isDarkTheme.value) Color(0xFF2D2D2D) else Color.White
-                        ),
-                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp)
+                        )
                     )
                     
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (inputText.isNotBlank() && hasValidApiKey) Color(0xFF0088CC)
-                                else Color(0xFFE0E0E0)
-                            )
-                            .clickable(enabled = inputText.isNotBlank() && hasValidApiKey && !isAiLoading) {
+                    // Send Button - NOW WORKING
+                    Button(
+                        onClick = {
+                            if (inputText.isNotBlank() && hasValidApiKey && !isAiLoading) {
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
                                 scope.launch {
                                     listState.animateScrollToItem(chatMessages.size)
                                 }
-                            },
-                        contentAlignment = Alignment.Center
+                            } else if (!hasValidApiKey) {
+                                Toast.makeText(context, "Please add API Key first", Toast.LENGTH_SHORT).show()
+                                showApiKeyDialog = true
+                            }
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (inputText.isNotBlank() && hasValidApiKey) Color(0xFF0088CC) else Color(0xFFE0E0E0)
+                        ),
+                        shape = CircleShape,
+                        enabled = inputText.isNotBlank() && hasValidApiKey && !isAiLoading
                     ) {
                         Icon(
                             Icons.Default.Send,
-                            contentDescription = "Send Message",
+                            contentDescription = "Send",
                             tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -266,6 +268,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         }
     }
     
+    // Model Selector Dialog
     if (showModelSelector) {
         AlertDialog(
             onDismissRequest = { showModelSelector = false },
@@ -314,6 +317,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         )
     }
     
+    // API Key Dialog
     if (showApiKeyDialog) {
         var keyInput by remember { mutableStateOf(viewModel.geminiApiKey.value) }
         var showKey by remember { mutableStateOf(false) }
@@ -356,11 +360,12 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         if (keyInput.isNotBlank()) {
                             viewModel.saveApiKey(context, keyInput)
                             showApiKeyDialog = false
-                            Toast.makeText(context, "API Key Saved!", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "API Key Saved! You can now chat.", Toast.LENGTH_LONG).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0088CC)),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Save API Key", color = Color.White)
                 }
@@ -376,7 +381,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
 }
 
 @Composable
-fun WelcomeCard() {
+fun WelcomeCard(hasValidApiKey: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
