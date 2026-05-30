@@ -15,7 +15,6 @@ import kotlinx.coroutines.withContext
 
 class AssetViewModel : ViewModel() {
     
-    // ✨ Google SDK အတွက် "models/" စာသားကို ဖယ်ရှားပြီး တိုက်ရိုက်ပြင်ဆင်ထားပါသည်
     val availableModels = listOf(
         "gemini-1.5-flash",
         "gemini-1.5-pro"
@@ -95,7 +94,8 @@ class AssetViewModel : ViewModel() {
                 isUser = false,
                 timestamp = System.currentTimeMillis()
             )
-            _chatMessages.value = _chatMessage.value + noKeyMessage
+            // ✨ ဒီနေရာလေးကို _chatMessages လို့ ပုံစံမှန်ပြင်ဆင်ထားပါတယ်ဗျာ
+            _chatMessages.value = _chatMessages.value + noKeyMessage
             return
         }
         
