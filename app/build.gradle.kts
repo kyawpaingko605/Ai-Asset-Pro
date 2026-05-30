@@ -18,9 +18,8 @@ android {
 
     buildTypes {
         release {
-            // ✨ FEATURE: ကုဒ်တွေကို သူခိုးမခိုးနိုင်အောင်နဲ့ App Size သေးသွားအောင် ကာကွယ်တဲ့စနစ် ဖွင့်လိုက်ပါတယ်
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = true // ကုဒ်တွေကို Obfuscate လုပ်ပြီး Size သေးအောင်လုပ်ခြင်း
+            isShrinkResources = true // မလိုအပ်တဲ့ resource တွေကို ဖယ်ရှားခြင်း
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -42,6 +41,7 @@ android {
     }
     
     composeOptions {
+        // Kotlin 1.9.20 နဲ့ တွဲဖက်သုံးနိုင်ရန် Version အမှန်ဖြစ်ပါသည်
         kotlinCompilerExtensionVersion = "1.5.4"
     }
 }
@@ -68,12 +68,13 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     
-    // Gemini AI
-    implementation("com.google.ai.client.generativeai:generativeai:0.2.0")
+    // ✨ FIX: Gemini SDK ကို 0.2.0 မှ 0.9.0 သို့ အဆင့်မြှင့်တင်ထားပါသည်
+    // ဒါမှသာ gemini-1.5-pro / flash တို့ကို အသုံးပြုနိုင်မှာ ဖြစ်ပါတယ်
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    // ✨ ADDED: ဓါတ်ပုံတွေကို Premium ဆန်ဆန် ပြသပေးမည့် Coil Library ကို ဖြည့်စွက်ထားပါတယ်
+    // Coil Library
     implementation("io.coil-kt:coil-compose:2.6.0")
 }
