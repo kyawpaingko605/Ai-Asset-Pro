@@ -97,7 +97,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                                 .background(Color(0xFF0088CC)),
                             contentAlignment = Alignment.Center
                         ) {
-                            // ✨ အိုင်ကွန်ကို Gemini ပုံစံမှ AI Brain အိုင်ကွန်သို့ ပြောင်းလဲထားပါသည်
+                            // ✨ AI Brain အိုင်ကွန်သို့ ပြောင်းလဲထားပါသည်
                             Icon(Icons.Default.Psychology, contentDescription = "AI Logo", tint = Color.White, modifier = Modifier.size(24.dp))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -299,7 +299,7 @@ fun WelcomeCard() {
     ) {
         Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFF0088CC)), contentAlignment = Alignment.Center) {
-                // ✨ Welcome Card က အိုင်ကွန်ကိုပါ AI Brain ပုံစံ ပြောင်းလဲထားပါသည်
+                // Welcome Card အိုင်ကွန်ကိုပါ AI Brain ပုံစံ ပြောင်းလဲထားပါသည်
                 Icon(Icons.Default.Psychology, contentDescription = "AI Logo", tint = Color.White, modifier = Modifier.size(44.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
