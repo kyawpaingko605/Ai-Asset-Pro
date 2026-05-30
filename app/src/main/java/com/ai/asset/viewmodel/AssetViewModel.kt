@@ -7,6 +7,7 @@ import com.ai.asset.model.ChatMessage
 import com.ai.asset.repository.ApiKeyRepository
 import com.ai.asset.repository.ChatHistoryRepository
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -18,8 +19,7 @@ class AssetViewModel : ViewModel() {
     val availableModels = listOf(
         "models/gemini-1.5-pro",
         "models/gemini-1.5-flash", 
-        "models/gemini-pro",
-        "models/gemini-pro-vision"
+        "models/gemini-pro"
     )
     
     private val _currentModel = MutableStateFlow(availableModels[0])
@@ -102,7 +102,7 @@ class AssetViewModel : ViewModel() {
         if (!_hasValidApiKey.value) {
             val errorMessage = ChatMessage(
                 id = System.currentTimeMillis().toString(),
-                text = "⚠️ Please enter a valid Gemini API Key in Settings to use AI chat.",
+                text = "⚠️ ကျေးဇူးပြု၍ သင့် Gemini API Key ကို Settings တွင် ထည့်သွင်းပါ။\n\nPlease enter your Gemini API Key in Settings.",
                 isUser = false,
                 timestamp = System.currentTimeMillis()
             )
@@ -131,7 +131,7 @@ class AssetViewModel : ViewModel() {
             } catch (e: Exception) {
                 val errorMessage = ChatMessage(
                     id = System.currentTimeMillis().toString(),
-                    text = "❌ Error: ${e.message}\n\nPlease check your internet connection and API Key.",
+                    text = "❌ Error: ${e.message}\n\nကျေးဇူးပြု၍ သင်၏ အင်တာနက်ချိတ်ဆက်မှုနှင့် API Key ကို စစ်ဆေးပါ။",
                     isUser = false,
                     timestamp = System.currentTimeMillis()
                 )
@@ -141,7 +141,7 @@ class AssetViewModel : ViewModel() {
         }
     }
     
-    // Real Gemini API Call
+    // Real Gemini API Call - Supports Burmese/Myanmar Language
     private suspend fun callGeminiApi(prompt: String): String {
         return withContext(Dispatchers.IO) {
             try {
@@ -154,17 +154,27 @@ class AssetViewModel : ViewModel() {
                     apiKey = apiKey
                 )
                 
-                // Send message and get response
-                val response = generativeModel.generateContent(prompt)
+                // System instruction to support Burmese language
+                val systemPrompt = """
+                    You are a helpful AI assistant. You can understand and respond in Burmese (Myanmar language) fluently.
+                    You should respond in the same language as the user's question.
+                    If user asks in Burmese, respond in Burmese.
+                    If user asks in English, respond in English.
+                    Be helpful, accurate, and concise.
+                """.trimIndent()
+                
+                // Send message with context
+                val chat = generativeModel.startChat()
+                val response = chat.sendMessage(prompt)
                 
                 response.text ?: "No response from AI. Please try again."
                 
             } catch (e: Exception) {
                 when {
-                    e.message?.contains("403") == true -> "⚠️ API Key is invalid or expired. Please check your Gemini API Key."
-                    e.message?.contains("429") == true -> "⚠️ Rate limit exceeded. Please try again later."
-                    e.message?.contains("404") == true -> "⚠️ Model not found. Please select a different model."
-                    else -> "❌ Error: ${e.message}"
+                    e.message?.contains("403") == true -> "⚠️ API Key မမှန်ကန်ပါ။ ကျေးဇူးပြု၍ သင်၏ Gemini API Key ကို စစ်ဆေးပါ။"
+                    e.message?.contains("429") == true -> "⚠️ Request အများကြီးပို့မိပါသည်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။"
+                    e.message?.contains("404") == true -> "⚠️ AI Model ကို မတွေ့ပါ။ အခြား Model ကို ရွေးချယ်ပါ။"
+                    else -> "❌ Error: ${e.message}\n\nPlease check your internet connection and try again."
                 }
             }
         }
