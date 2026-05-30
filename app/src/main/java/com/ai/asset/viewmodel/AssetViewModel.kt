@@ -6,9 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.ai.asset.model.ChatMessage
 import com.ai.asset.repository.ApiKeyRepository
 import com.ai.asset.repository.ChatHistoryRepository
+import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AssetViewModel : ViewModel() {
     
@@ -81,6 +84,7 @@ class AssetViewModel : ViewModel() {
     }
     
     fun sendMessage(message: String) {
+        // Create user message
         val userMessage = ChatMessage(
             id = System.currentTimeMillis().toString(),
             text = message,
@@ -88,22 +92,34 @@ class AssetViewModel : ViewModel() {
             timestamp = System.currentTimeMillis()
         )
         
+        // Add to UI and save to database
         _chatMessages.value = _chatMessages.value + userMessage
         viewModelScope.launch {
             historyRepo.saveMessage(userMessage)
         }
         
+        // Check if API key is valid
+        if (!_hasValidApiKey.value) {
+            val errorMessage = ChatMessage(
+                id = System.currentTimeMillis().toString(),
+                text = "⚠️ Please enter a valid Gemini API Key in Settings to use AI chat.",
+                isUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            _chatMessages.value = _chatMessages.value + errorMessage
+            return
+        }
+        
         _isAiLoading.value = true
         
+        // Call Gemini API
         viewModelScope.launch {
             try {
-                kotlinx.coroutines.delay(1500)
-                
-                val responseText = buildResponse(message, _currentModel.value)
+                val response = callGeminiApi(message)
                 
                 val aiMessage = ChatMessage(
                     id = System.currentTimeMillis().toString(),
-                    text = responseText,
+                    text = response,
                     isUser = false,
                     timestamp = System.currentTimeMillis()
                 )
@@ -115,7 +131,7 @@ class AssetViewModel : ViewModel() {
             } catch (e: Exception) {
                 val errorMessage = ChatMessage(
                     id = System.currentTimeMillis().toString(),
-                    text = "❌ Error: ${e.message}",
+                    text = "❌ Error: ${e.message}\n\nPlease check your internet connection and API Key.",
                     isUser = false,
                     timestamp = System.currentTimeMillis()
                 )
@@ -125,25 +141,33 @@ class AssetViewModel : ViewModel() {
         }
     }
     
-    private fun buildResponse(message: String, model: String): String {
-        val modelName = model.replace("models/", "")
-            .replace("gemini-", "Gemini ")
-            .replace("-pro", " Pro")
-            .replace("-flash", " Flash")
-            .replace("-vision", " Vision")
-        
-        return """
-**🤖 Gemini AI Response**
-
-You asked: "$message"
-
-**Model:** $modelName
-**Status:** Ready
-
----
-
-*Pro-level response from Gemini AI*
-        """.trimIndent()
+    // Real Gemini API Call
+    private suspend fun callGeminiApi(prompt: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val apiKey = _geminiApiKey.value
+                val modelName = _currentModel.value
+                
+                // Create Gemini model instance
+                val generativeModel = GenerativeModel(
+                    modelName = modelName,
+                    apiKey = apiKey
+                )
+                
+                // Send message and get response
+                val response = generativeModel.generateContent(prompt)
+                
+                response.text ?: "No response from AI. Please try again."
+                
+            } catch (e: Exception) {
+                when {
+                    e.message?.contains("403") == true -> "⚠️ API Key is invalid or expired. Please check your Gemini API Key."
+                    e.message?.contains("429") == true -> "⚠️ Rate limit exceeded. Please try again later."
+                    e.message?.contains("404") == true -> "⚠️ Model not found. Please select a different model."
+                    else -> "❌ Error: ${e.message}"
+                }
+            }
+        }
     }
     
     fun clearChatHistory() {
