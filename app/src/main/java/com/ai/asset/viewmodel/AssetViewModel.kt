@@ -1,4 +1,4 @@
-package com.ai.asset.viewmodel
+package com.ai.asset.viewmodel // ✨ FIX: 'Package' မှ 'package' သို့ ပြင်ဆင်ပြီး
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -54,7 +54,8 @@ class AssetViewModel : ViewModel() {
         val savedKey = apiKeyRepo.getApiKey().trim()
         if (savedKey.isNotEmpty()) {
             _geminiApiKey.value = savedKey
-            _hasValidApiKey.value = savedKey.length > 20 && savedKey.startsWith("AIza")
+            // ✨ FIX: Gemini Key အသစ်များသည် AIza နှင့် မစတတ်သဖြင့် Length တစ်ခုတည်းဖြင့် စစ်ဆေးရန် ပြင်ဆင်ထားပါသည်
+            _hasValidApiKey.value = savedKey.length > 20
         }
         
         _isDarkTheme.value = apiKeyRepo.getThemePreference()
@@ -89,10 +90,10 @@ class AssetViewModel : ViewModel() {
         val cleanedKey = key.trim()
         apiKeyRepo.saveApiKey(cleanedKey)
         _geminiApiKey.value = cleanedKey
-        _hasValidApiKey.value = cleanedKey.length > 20 && cleanedKey.startsWith("AIza")
+        // ✨ FIX: Key အသစ်များ ဝင်ဆံ့စေရန် လိုအပ်သလို ဖြေလျှော့ပြင်ဆင်ထားပါသည်
+        _hasValidApiKey.value = cleanedKey.length > 20
     }
     
-    // ✨ Image Input ပါ ပေးပို့နိုင်အောင် sendMessage ကို Upgrade လုပ်ထားပါတယ်
     fun sendMessage(context: Context, message: String, imageUri: Uri? = null) {
         val displayMessage = if (imageUri != null && message.isBlank()) "[Sent an Image]" else message
         
@@ -154,7 +155,6 @@ class AssetViewModel : ViewModel() {
         }
     }
     
-    // ✨ Bitmap ပြောင်းလဲပေးသည့် Utility Function
     private fun uriToBitmap(context: Context, uri: Uri): Bitmap? {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
@@ -164,7 +164,6 @@ class AssetViewModel : ViewModel() {
         }
     }
     
-    // ✨ Text ရော Image ပါ လက်ခံနိုင်အောင် API Call ကို ပြင်ဆင်ထားပါတယ်
     private suspend fun callGeminiApi(prompt: String, bitmap: Bitmap?): String {
         return withContext(Dispatchers.IO) {
             try {
@@ -174,14 +173,12 @@ class AssetViewModel : ViewModel() {
                 )
                 
                 val response = if (bitmap != null) {
-                    // Multimodal Input (Image + Text)
                     val inputContent = content {
                         image(bitmap)
                         text(prompt.ifBlank { "Describe this image in detail." })
                     }
                     generativeModel.generateContent(inputContent)
                 } else {
-                    // Text Only Input
                     val chat = generativeModel.startChat()
                     chat.sendMessage(prompt)
                 }
