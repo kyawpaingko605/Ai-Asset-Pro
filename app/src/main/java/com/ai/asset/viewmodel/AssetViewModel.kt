@@ -15,9 +15,10 @@ import kotlinx.coroutines.withContext
 
 class AssetViewModel : ViewModel() {
     
+    // ✨ Google SDK အတွက် "models/" စာသားကို ဖယ်ရှားပြီး တိုက်ရိုက်ပြင်ဆင်ထားပါသည်
     val availableModels = listOf(
-        "models/gemini-1.5-flash",
-        "models/gemini-1.5-pro"
+        "gemini-1.5-flash",
+        "gemini-1.5-pro"
     )
     
     private val _currentModel = MutableStateFlow(availableModels[0])
@@ -81,10 +82,8 @@ class AssetViewModel : ViewModel() {
             timestamp = System.currentTimeMillis()
         )
         
-        // UI ပေါ် အသုံးပြုသူပို့လိုက်တဲ့စာကို ချက်ချင်းတင်ပေးမည်
         _chatMessages.value = _chatMessages.value + userMessage
         
-        // Database သိမ်းတာကို နောက်ကွယ်ကနေ သီးသန့်လုပ်ခိုင်းမည် (UI ကို ပိတ်မဆို့တော့ပါ)
         viewModelScope.launch(Dispatchers.IO) {
             try { historyRepo.saveMessage(userMessage) } catch (e: Exception) {}
         }
@@ -96,7 +95,7 @@ class AssetViewModel : ViewModel() {
                 isUser = false,
                 timestamp = System.currentTimeMillis()
             )
-            _chatMessages.value = _chatMessages.value + noKeyMessage
+            _chatMessages.value = _chatMessage.value + noKeyMessage
             return
         }
         
@@ -104,7 +103,6 @@ class AssetViewModel : ViewModel() {
         
         viewModelScope.launch(Dispatchers.Main) {
             try {
-                // Gemini AI ဆီ တိုက်ရိုက်တန်းခေါ်မည်
                 val response = callGeminiApi(message)
                 
                 val aiMessage = ChatMessage(
@@ -143,7 +141,7 @@ class AssetViewModel : ViewModel() {
                 val response = generativeModel.generateContent(prompt)
                 response.text ?: "AI ထံမှ တုံ့ပြန်မှု ဗလာဖြစ်နေသည်။ နောက်တစ်ကြိမ် ကြိုးစားပါ။"
             } catch (e: Exception) {
-                "⚠️ Gemini SDK Error: ${e.localizedMessage}\n\n💡 လမ်းညွှန်ချက်: Free Key သုံးစွဲမှု ပိတ်ပင်ခံရပါက VPN (USA သို့မဟုတ် Singapore) ကို ဖွင့်သုံးကြည့်ပါဗျာ။"
+                "⚠️ Gemini SDK Error: ${e.localizedMessage}"
             }
         }
     }
