@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent // ✨ FIX: Missing Import ကို ထည့်သွင်းပေးထားပါတယ်
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -20,8 +21,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.* // ✨ Icons.Default ကို တိုက်ရိုက်သုံးရန် ပြင်ဆင်ထားပါတယ်
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,8 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.res.stringResource // ✨ ADDED: strings.xml နဲ့ ချိတ်ဆက်ဖို့
-import com.ai.asset.R // ✨ ADDED: Resource ID တွေ သိစေဖို့
+import androidx.compose.ui.res.stringResource
+import com.ai.asset.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -127,12 +127,10 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            // ✨ FIX: App Name ကို strings.xml နဲ့ ချိတ်ဆက်ထားပါတယ်
                             Text(stringResource(R.string.app_name), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color(0xFF111827))
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                                 Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(if (hasValidApiKey) Color(0xFF10B981) else Color(0xFFF59E0B)))
                                 Spacer(modifier = Modifier.width(5.dp))
-                                // ✨ FIX: Status စာသားကို strings.xml နဲ့ ချိတ်ဆက်ထားပါတယ်
                                 Text(
                                     if (hasValidApiKey) stringResource(R.string.ai_ready) else stringResource(R.string.api_key_required), 
                                     fontSize = 11.sp, 
@@ -191,7 +189,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.VpnKey, contentDescription = "Key", tint = Color(0xFFD97706), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(10.dp))
-                        // ✨ FIX: Banner စာသားကို strings.xml နဲ့ ချိတ်ဆက်ထားပါတယ်
                         Text(stringResource(R.string.tap_to_enter_key), fontSize = 12.sp, color = Color(0xFF92400E), modifier = Modifier.weight(1f))
                     }
                 }
@@ -246,7 +243,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        // ✨ FIX: Hint စာသားများကို strings.xml နဲ့ ချိတ်ဆက်ထားပါတယ်
                         placeholder = { 
                             Text(
                                 if(selectedImageUri != null) stringResource(R.string.ask_about_image) else stringResource(R.string.ask_anything), 
@@ -280,7 +276,8 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(20.dp))
+                        // ✨ FIX: Version အားလုံးမှာ Build အောင်မြင်မယ့် Icons.Default.Send ကို သုံးထားပါတယ်
+                        Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
             }
@@ -357,12 +354,10 @@ fun WelcomeScreen(isDark: Boolean, onSuggestionClick: (String) -> Unit) {
             Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Color.White, modifier = Modifier.size(34.dp))
         }
         Spacer(modifier = Modifier.height(16.dp))
-        // ✨ FIX: App Name နှင့် Welcome Subtitle ကို strings.xml ချိတ်ဆက်ထားပါတယ်
         Text(stringResource(R.string.app_name), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = if(isDark) Color.White else Color(0xFF111827))
         Text(stringResource(R.string.next_gen_assistant), fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
         Spacer(modifier = Modifier.height(24.dp))
         
-        // ✨ FIX: Suggestion Title ကို strings.xml ချိတ်ဆက်ထားပါတယ်
         Text(stringResource(R.string.try_asking), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray, modifier = Modifier.align(Alignment.Start).padding(bottom = 8.dp))
         val suggestions = listOf(
             "🖼️ ဓါတ်ပုံတစ်ပုံတင်ပြီး 'ဒီပုံကို ရှင်းပြပေးပါ' ဟု မေးမြန်းပါ",
@@ -409,7 +404,6 @@ fun ChatBubble(message: ChatMessage, isDark: Boolean, onCopy: () -> Unit) {
             }
         }
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-            // ✨ FIX: Dropdown Menu Text ကို strings.xml ချိတ်ဆက်ထားပါတယ်
             DropdownMenuItem(text = { Text(stringResource(R.string.copy_text)) }, onClick = { onCopy(); showMenu = false })
         }
     }
