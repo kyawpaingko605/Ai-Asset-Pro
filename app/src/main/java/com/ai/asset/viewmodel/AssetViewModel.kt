@@ -16,11 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.InputStream
 
 class AssetViewModel : ViewModel() {
 
-    // စီးပွားရေးလုပ်ငန်းသုံးအတွက် ယုံကြည်စိတ်ချရဆုံး မော်ဒယ်လ်များသာ ထည့်သွင်းထားသည်
     val availableModels = listOf("gemini-1.5-flash", "gemini-1.5-pro")
 
     private val _currentModel = MutableStateFlow(availableModels[0])
@@ -48,16 +46,13 @@ class AssetViewModel : ViewModel() {
         apiKeyRepo = ApiKeyRepository(context)
         historyRepo = ChatHistoryRepository(context)
 
-        val savedKey = apiKeyRepo.getApiKey().trim()
+        val savedKey = apiKeyRepo.getApiKey()
         _geminiApiKey.value = savedKey
-        _hasValidApiKey.value = savedKey.length > 30 // API Key များသည် အများအားဖြင့် ရှည်လျားသည်
-
+        _hasValidApiKey.value = savedKey.length > 20
         _isDarkTheme.value = apiKeyRepo.getThemePreference()
 
         val savedModel = apiKeyRepo.getSelectedModel()
-        if (availableModels.contains(savedModel)) {
-            _currentModel.value = savedModel
-        }
+        if (availableModels.contains(savedModel)) _currentModel.value = savedModel
 
         viewModelScope.launch {
             historyRepo.loadChatHistory().collect { _chatMessages.value = it }
@@ -65,29 +60,30 @@ class AssetViewModel : ViewModel() {
     }
 
     fun saveApiKey(context: Context, key: String) {
-        val cleanedKey = key.trim()
-        apiKeyRepo.saveApiKey(cleanedKey)
-        _geminiApiKey.value = cleanedKey
-        _hasValidApiKey.value = cleanedKey.length > 30
+        val cleaned = key.trim()
+        apiKeyRepo.saveApiKey(cleaned)
+        _geminiApiKey.value = cleaned
+        _hasValidApiKey.value = cleaned.length > 20
     }
 
     fun sendMessage(context: Context, prompt: String, imageUri: Uri? = null) {
         if (!_hasValidApiKey.value) return
 
-        val userMessage = ChatMessage(System.currentTimeMillis().toString(), prompt, true)
-        _chatMessages.value += userMessage
+        val userMsg = ChatMessage(text = prompt, isUser = true, imageUri = imageUri?.toString())
+        _chatMessages.value += userMsg
 
         viewModelScope.launch {
             _isAiLoading.value = true
             try {
                 val bitmap = imageUri?.let { uriToBitmap(context, it) }
                 val response = callGemini(prompt, bitmap)
-                val aiMessage = ChatMessage(System.currentTimeMillis().toString(), response, false)
-                _chatMessages.value += aiMessage
-                historyRepo.saveMessage(userMessage)
-                historyRepo.saveMessage(aiMessage)
+                val aiMsg = ChatMessage(text = response, isUser = false)
+                
+                _chatMessages.value += aiMsg
+                historyRepo.saveMessage(userMsg)
+                historyRepo.saveMessage(aiMsg)
             } catch (e: Exception) {
-                _chatMessages.value += ChatMessage(System.currentTimeMillis().toString(), "Error: ${e.localizedMessage}", false)
+                _chatMessages.value += ChatMessage(text = "Error: ${e.localizedMessage}", isUser = false)
             } finally {
                 _isAiLoading.value = false
             }
@@ -97,7 +93,7 @@ class AssetViewModel : ViewModel() {
     private suspend fun callGemini(prompt: String, bitmap: Bitmap?): String = withContext(Dispatchers.IO) {
         val model = GenerativeModel(_currentModel.value, _geminiApiKey.value)
         val response = if (bitmap != null) {
-            model.generateContent(content { image(bitmap); text(prompt) })
+            model.generateContent(content { image(bitmap); text(prompt.ifBlank { "Describe this" }) })
         } else {
             model.generateContent(prompt)
         }
@@ -108,6 +104,13 @@ class AssetViewModel : ViewModel() {
         context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
     } catch (e: Exception) { null }
 
-    fun toggleTheme() { _isDarkTheme.value = !_isDarkTheme.value; apiKeyRepo.saveThemePreference(_isDarkTheme.value) }
-    fun updateModel(model: String) { _currentModel.value = model; apiKeyRepo.saveSelectedModel(model) }
+    fun toggleTheme() { 
+        _isDarkTheme.value = !_isDarkTheme.value
+        apiKeyRepo.saveThemePreference(_isDarkTheme.value) 
+    }
+
+    fun updateModel(model: String) { 
+        _currentModel.value = model
+        apiKeyRepo.saveSelectedModel(model) 
+    }
 }
