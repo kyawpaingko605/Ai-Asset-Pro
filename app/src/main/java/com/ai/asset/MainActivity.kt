@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -91,7 +90,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Logo
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -124,15 +122,15 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 },
                 actions = {
                     IconButton(onClick = { showModelSelector = true }) {
-                        Icon(Icons.Default.ModelTraining, contentDescription = "Model", tint = Color(0xFF0088CC))
+                        Icon(Icons.Default.ModelTraining, contentDescription = "Select Model", tint = Color(0xFF0088CC))
                     }
                     IconButton(onClick = { showApiKeyDialog = true }) {
-                        Icon(Icons.Default.VpnKey, contentDescription = "API Key", tint = Color(0xFF0088CC))
+                        Icon(Icons.Default.VpnKey, contentDescription = "API Key Settings", tint = Color(0xFF0088CC))
                     }
                     IconButton(onClick = { viewModel.toggleTheme() }) {
                         Icon(
                             if (viewModel.isDarkTheme.value) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Theme",
+                            contentDescription = "Toggle Theme",
                             tint = Color(0xFF0088CC)
                         )
                     }
@@ -148,7 +146,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Chat Messages
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -169,7 +166,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         message = message,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(message.text))
-                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
@@ -181,7 +178,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // API Key Warning
             if (!hasValidApiKey) {
                 Card(
                     modifier = Modifier
@@ -197,16 +193,15 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.VpnKey, tint = Color(0xFFFF9800), modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.VpnKey, contentDescription = "Key", tint = Color(0xFFFF9800), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text("Add Gemini API Key", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFFFF9800))
                         }
-                        Icon(Icons.Default.ArrowForward, tint = Color(0xFFFF9800), modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ArrowForward, contentDescription = "Go", tint = Color(0xFFFF9800), modifier = Modifier.size(18.dp))
                     }
                 }
             }
             
-            // Input Area
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp,
@@ -219,7 +214,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Text Input
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
@@ -243,7 +237,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         textStyle = LocalTextStyle.current.copy(fontSize = 15.sp)
                     )
                     
-                    // Send Button
                     Box(
                         modifier = Modifier
                             .size(48.dp)
@@ -263,7 +256,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     ) {
                         Icon(
                             Icons.Default.Send,
-                            contentDescription = "Send",
+                            contentDescription = "Send Message",
                             tint = Color.White,
                             modifier = Modifier.size(22.dp)
                         )
@@ -273,7 +266,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         }
     }
     
-    // Model Selector Dialog
     if (showModelSelector) {
         AlertDialog(
             onDismissRequest = { showModelSelector = false },
@@ -306,7 +298,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                             ) {
                                 Text(displayName, fontSize = 14.sp, fontWeight = if (currentModel == model) FontWeight.Bold else FontWeight.Normal)
                                 if (currentModel == model) {
-                                    Icon(Icons.Default.CheckCircle, tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.CheckCircle, contentDescription = "Selected", tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
@@ -322,7 +314,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         )
     }
     
-    // API Key Dialog
     if (showApiKeyDialog) {
         var keyInput by remember { mutableStateOf(viewModel.geminiApiKey.value) }
         var showKey by remember { mutableStateOf(false) }
@@ -402,7 +393,7 @@ fun WelcomeCard() {
                     .background(Color(0xFF0088CC)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = "Logo", tint = Color.White, modifier = Modifier.size(40.dp))
+                Icon(Icons.Default.AutoAwesome, contentDescription = "App Logo", tint = Color.White, modifier = Modifier.size(40.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text("AI Asset Pro", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
@@ -463,7 +454,7 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
             DropdownMenuItem(
                 text = { Text("Copy", fontSize = 13.sp) },
                 onClick = { onCopy(); showMenu = false },
-                leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(18.dp)) }
             )
         }
     }
