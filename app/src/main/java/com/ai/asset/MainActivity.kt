@@ -197,7 +197,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // Input Area - FIXED: အသုံးပြုရလွယ်ကူအောင် ကန့်သတ်ချက်များ ဖြေလျှော့ပေးထားသည်
+            // Input Area
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp,
@@ -233,20 +233,15 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         )
                     )
                     
-                    // Send Button - ✨ စာရိုက်လိုက်သည်နှင့် တန်းပြီးအပြာရောင်ပြောင်းကာ နှိပ်၍ရအောင် ပြင်ဆင်ထားပါသည်
+                    // Send Button - ✨ FIXED: အနှောင့်အယှက်ပေးနေသော UI Key စစ်ဆေးချက်ကို ကျော်ခွလိုက်ပါပြီ
                     Button(
                         onClick = {
                             if (inputText.isNotBlank() && !isAiLoading) {
-                                if (hasValidApiKey) {
-                                    viewModel.sendMessage(inputText)
-                                    inputText = ""
-                                    scope.launch {
-                                        listState.animateScrollToItem(chatMessages.size)
-                                    }
-                                } else {
-                                    // API Key မရှိသေးပါက ကာကွယ်ပေးပြီး Dialog ကို တန်းပွင့်စေမည်
-                                    Toast.makeText(context, "Please add API Key first", Toast.LENGTH_SHORT).show()
-                                    showApiKeyDialog = true
+                                // စာတန်းပို့ခိုင်းလိုက်မည်။ ViewModel ကဏ္ဍထဲတွင် Key မရှိပါက Error စာသား အလိုအလျောက် ပြပေးပါလိမ့်မည်။
+                                viewModel.sendMessage(inputText)
+                                inputText = ""
+                                scope.launch {
+                                    listState.animateScrollToItem(chatMessages.size)
                                 }
                             }
                         },
@@ -321,7 +316,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         )
     }
     
-    // API Key Dialog - ✨ Re-composition စနစ် မှန်ကန်စေရန် နိုင်ငံတကာအဆင့်မီ ပြန်လည်မွမ်းမံထားပါသည်
+    // API Key Dialog
     if (showApiKeyDialog) {
         val currentSavedKey by viewModel.geminiApiKey.collectAsStateWithLifecycle()
         var keyInput by remember { mutableStateOf(currentSavedKey) }
