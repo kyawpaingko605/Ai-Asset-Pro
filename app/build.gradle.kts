@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp") version "1.9.20-1.0.14"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20" // ✨ AI အတွက် အရေးကြီးပါတယ်
 }
 
 android {
@@ -14,9 +15,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        
-        // ✨ FIX: Library ပေါင်းများစွာကြောင့် ဖြစ်ပေါ်လာမည့် Multidex Error ကို ကာကွယ်ရန်
-        multiDexEnabled = true 
+        multiDexEnabled = true // ✨ App ပိုကြီးလာရင် Crash မဖြစ်အောင်
     }
 
     buildTypes {
@@ -52,8 +51,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.0")
-    
-    // ✨ FIX: Multidex ကို ထည့်သွင်းခြင်း
     implementation("androidx.multidex:multidex:2.0.1")
     
     // Compose
@@ -73,8 +70,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     
-    // ✨ FIX: Gemini SDK ဗားရှင်းအသစ်သို့ ပြင်ဆင်ခြင်း
+    // ✨ Gemini AI (နောက်ဆုံးဗားရှင်း)
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // ✨ လိုအပ်ချက်
     
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
