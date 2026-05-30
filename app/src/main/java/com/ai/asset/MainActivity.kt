@@ -97,7 +97,8 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                                 .background(Color(0xFF0088CC)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = "Logo", tint = Color.White, modifier = Modifier.size(22.dp))
+                            // ✨ အိုင်ကွန်ကို Gemini ပုံစံမှ AI Brain အိုင်ကွန်သို့ ပြောင်းလဲထားပါသည်
+                            Icon(Icons.Default.Psychology, contentDescription = "AI Logo", tint = Color.White, modifier = Modifier.size(24.dp))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -220,7 +221,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
             text = {
                 Column {
                     availableModels.forEach { model ->
-                        val displayName = model.replace("models/", "").replace("gemini-", "Gemini ").replace("-pro", " Pro").replace("-flash", " Flash")
+                        val displayName = model.replace("gemini-", "Gemini ").replace("-pro", " Pro").replace("-flash", " Flash")
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable {
                                 viewModel.updateModel(model)
@@ -298,12 +299,13 @@ fun WelcomeCard() {
     ) {
         Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFF0088CC)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = "Logo", tint = Color.White, modifier = Modifier.size(40.dp))
+                // ✨ Welcome Card က အိုင်ကွန်ကိုပါ AI Brain ပုံစံ ပြောင်းလဲထားပါသည်
+                Icon(Icons.Default.Psychology, contentDescription = "AI Logo", tint = Color.White, modifier = Modifier.size(44.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text("AI Asset Pro", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Ready to chat with Gemini", fontSize = 14.sp, color = Color.Gray)
+            Text("Ready to chat with Gemini AI", fontSize = 14.sp, color = Color.Gray)
         }
     }
 }
