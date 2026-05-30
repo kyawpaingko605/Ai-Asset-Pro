@@ -1,21 +1,25 @@
 package com.ai.asset.viewmodel
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ai.asset.model.ChatMessage
 import com.ai.asset.repository.ApiKeyRepository
 import com.ai.asset.repository.ChatHistoryRepository
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 class AssetViewModel : ViewModel() {
     
-    // ✨ FIX: models/ ကို ဖြုတ်ပြီး Gemini SDK သိမယ့် Model Name အမှန်တွေ ပြောင်းထားပါတယ်
     val availableModels = listOf(
         "gemini-1.5-flash",
         "gemini-1.5-pro", 
@@ -56,7 +60,6 @@ class AssetViewModel : ViewModel() {
         _isDarkTheme.value = apiKeyRepo.getThemePreference()
         
         val savedModel = apiKeyRepo.getSelectedModel()
-        // ✨ FIX: သိမ်းထားတဲ့ model အဟောင်းမှာ models/ ပါနေရင် ဖယ်ထုတ်ပစ်ဖို့ စစ်ဆေးချက်ထည့်ထားပါတယ်
         val cleanedModel = savedModel.replace("models/", "")
         if (cleanedModel.isNotEmpty() && availableModels.contains(cleanedModel)) {
             _currentModel.value = cleanedModel
@@ -89,10 +92,13 @@ class AssetViewModel : ViewModel() {
         _hasValidApiKey.value = cleanedKey.length > 20 && cleanedKey.startsWith("AIza")
     }
     
-    fun sendMessage(message: String) {
+    // ✨ Image Input ပါ ပေးပို့နိုင်အောင် sendMessage ကို Upgrade လုပ်ထားပါတယ်
+    fun sendMessage(context: Context, message: String, imageUri: Uri? = null) {
+        val displayMessage = if (imageUri != null && message.isBlank()) "[Sent an Image]" else message
+        
         val userMessage = ChatMessage(
             id = System.currentTimeMillis().toString(),
-            text = message,
+            text = displayMessage,
             isUser = true,
             timestamp = System.currentTimeMillis()
         )
@@ -105,7 +111,7 @@ class AssetViewModel : ViewModel() {
         if (!_hasValidApiKey.value) {
             val errorMessage = ChatMessage(
                 id = System.currentTimeMillis().toString(),
-                text = "⚠️ ကျေးဇူးပြု၍ သင့် Gemini API Key ကို Settings တွင် ထည့်သွင်းပါ။\n\nPlease enter your Gemini API Key in Settings.",
+                text = "⚠️ ကျေးဇူးပြု၍ သင့် Gemini API Key ကို Settings တွင် ထည့်သွင်းပါ။",
                 isUser = false,
                 timestamp = System.currentTimeMillis()
             )
@@ -117,7 +123,12 @@ class AssetViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
-                val response = callGeminiApi(message)
+                var bitmap: Bitmap? = null
+                if (imageUri != null) {
+                    bitmap = uriToBitmap(context, imageUri)
+                }
+                
+                val response = callGeminiApi(message, bitmap)
                 
                 val aiMessage = ChatMessage(
                     id = System.currentTimeMillis().toString(),
@@ -133,7 +144,7 @@ class AssetViewModel : ViewModel() {
             } catch (e: Exception) {
                 val errorMessage = ChatMessage(
                     id = System.currentTimeMillis().toString(),
-                    text = "❌ Error: ${e.message}\n\nကျေးဇူးပြု၍ သင်၏ အင်တာနက်ချိတ်ဆက်မှုနှင့် API Key ကို စစ်ဆေးပါ။",
+                    text = "❌ Error: ${e.message}",
                     isUser = false,
                     timestamp = System.currentTimeMillis()
                 )
@@ -143,28 +154,45 @@ class AssetViewModel : ViewModel() {
         }
     }
     
-    private suspend fun callGeminiApi(prompt: String): String {
+    // ✨ Bitmap ပြောင်းလဲပေးသည့် Utility Function
+    private fun uriToBitmap(context: Context, uri: Uri): Bitmap? {
+        return try {
+            val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+            BitmapFactory.decodeStream(inputStream)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    // ✨ Text ရော Image ပါ လက်ခံနိုင်အောင် API Call ကို ပြင်ဆင်ထားပါတယ်
+    private suspend fun callGeminiApi(prompt: String, bitmap: Bitmap?): String {
         return withContext(Dispatchers.IO) {
             try {
-                val apiKey = _geminiApiKey.value
-                val modelName = _currentModel.value
-                
                 val generativeModel = GenerativeModel(
-                    modelName = modelName,
-                    apiKey = apiKey
+                    modelName = _currentModel.value,
+                    apiKey = _geminiApiKey.value
                 )
                 
-                val chat = generativeModel.startChat()
-                val response = chat.sendMessage(prompt)
+                val response = if (bitmap != null) {
+                    // Multimodal Input (Image + Text)
+                    val inputContent = content {
+                        image(bitmap)
+                        text(prompt.ifBlank { "Describe this image in detail." })
+                    }
+                    generativeModel.generateContent(inputContent)
+                } else {
+                    // Text Only Input
+                    val chat = generativeModel.startChat()
+                    chat.sendMessage(prompt)
+                }
                 
-                response.text ?: "No response from AI. Please try again."
+                response.text ?: "AI မှ တုံ့ပြန်မှု မရှိပါ။ ထပ်မံကြိုးစားကြည့်ပါ။"
                 
             } catch (e: Exception) {
                 when {
-                    e.message?.contains("403") == true -> "⚠️ API Key မမှန်ကန်ပါ။ ကျေးဇူးပြု၍ သင်၏ Gemini API Key ကို စစ်ဆေးပါ။"
-                    e.message?.contains("429") == true -> "⚠️ Request အများကြီးပို့မိပါသည်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။"
-                    e.message?.contains("404") == true -> "⚠️ AI Model ကို မတွေ့ပါ။ အခြား Model ကို ရွေးချယ်ပါ။"
-                    else -> "❌ Error: ${e.message}\n\nPlease check your internet connection and try again."
+                    e.message?.contains("403") == true -> "⚠️ API Key မမှန်ကန်ပါ။"
+                    e.message?.contains("429") == true -> "⚠️ Request အများကြီးပို့မိပါသည်။ ခဏစောင့်ပါ။"
+                    else -> "❌ Error: ${e.message}"
                 }
             }
         }
