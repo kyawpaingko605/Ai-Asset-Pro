@@ -1,10 +1,10 @@
-package com.ai.asset
+package com.ai.asset // ✨ FIX: 'Package' မှ 'package' စာလုံးအသေးသို့ ပြင်ဆင်ထားပါတယ်
 
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent // ✨ FIX: Missing Import ကို ထည့်သွင်းပေးထားပါတယ်
+import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -21,7 +21,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.* // ✨ Icons.Default ကို တိုက်ရိုက်သုံးရန် ပြင်ဆင်ထားပါတယ်
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -276,7 +276,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        // ✨ FIX: Version အားလုံးမှာ Build အောင်မြင်မယ့် Icons.Default.Send ကို သုံးထားပါတယ်
                         Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
