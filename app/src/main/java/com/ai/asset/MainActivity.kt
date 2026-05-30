@@ -197,7 +197,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // Input Area - FIXED: Send button works now
+            // Input Area - FIXED: အသုံးပြုရလွယ်ကူအောင် ကန့်သတ်ချက်များ ဖြေလျှော့ပေးထားသည်
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp,
@@ -216,7 +216,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         onValueChange = { inputText = it },
                         placeholder = {
                             Text(
-                                if (hasValidApiKey) "Type your message in Burmese or English..." else "Enter API Key first",
+                                "Type your message in Burmese or English...",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
@@ -233,28 +233,32 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         )
                     )
                     
-                    // Send Button - NOW WORKING
+                    // Send Button - ✨ စာရိုက်လိုက်သည်နှင့် တန်းပြီးအပြာရောင်ပြောင်းကာ နှိပ်၍ရအောင် ပြင်ဆင်ထားပါသည်
                     Button(
                         onClick = {
-                            if (inputText.isNotBlank() && hasValidApiKey && !isAiLoading) {
-                                viewModel.sendMessage(inputText)
-                                inputText = ""
-                                scope.launch {
-                                    listState.animateScrollToItem(chatMessages.size)
+                            if (inputText.isNotBlank() && !isAiLoading) {
+                                if (hasValidApiKey) {
+                                    viewModel.sendMessage(inputText)
+                                    inputText = ""
+                                    scope.launch {
+                                        listState.animateScrollToItem(chatMessages.size)
+                                    }
+                                } else {
+                                    // API Key မရှိသေးပါက ကာကွယ်ပေးပြီး Dialog ကို တန်းပွင့်စေမည်
+                                    Toast.makeText(context, "Please add API Key first", Toast.LENGTH_SHORT).show()
+                                    showApiKeyDialog = true
                                 }
-                            } else if (!hasValidApiKey) {
-                                Toast.makeText(context, "Please add API Key first", Toast.LENGTH_SHORT).show()
-                                showApiKeyDialog = true
                             }
                         },
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (inputText.isNotBlank() && hasValidApiKey) Color(0xFF0088CC) else Color(0xFFE0E0E0)
+                            containerColor = if (inputText.isNotBlank()) Color(0xFF0088CC) else Color(0xFFE0E0E0),
+                            disabledContainerColor = Color(0xFFE0E0E0)
                         ),
                         shape = CircleShape,
-                        enabled = inputText.isNotBlank() && hasValidApiKey && !isAiLoading
+                        enabled = inputText.isNotBlank() && !isAiLoading
                     ) {
                         Icon(
                             Icons.Default.Send,
@@ -317,9 +321,10 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         )
     }
     
-    // API Key Dialog
+    // API Key Dialog - ✨ Re-composition စနစ် မှန်ကန်စေရန် နိုင်ငံတကာအဆင့်မီ ပြန်လည်မွမ်းမံထားပါသည်
     if (showApiKeyDialog) {
-        var keyInput by remember { mutableStateOf(viewModel.geminiApiKey.value) }
+        val currentSavedKey by viewModel.geminiApiKey.collectAsStateWithLifecycle()
+        var keyInput by remember { mutableStateOf(currentSavedKey) }
         var showKey by remember { mutableStateOf(false) }
         
         AlertDialog(
@@ -333,7 +338,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     
                     OutlinedTextField(
                         value = keyInput,
-                        onValueChange = { keyInput = it },
+                        onValueChange = { newValue -> keyInput = newValue },
                         placeholder = { Text("AIzaSy...", fontSize = 13.sp) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -358,7 +363,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 Button(
                     onClick = {
                         if (keyInput.isNotBlank()) {
-                            viewModel.saveApiKey(context, keyInput)
+                            viewModel.saveApiKey(context, keyInput.trim())
                             showApiKeyDialog = false
                             Toast.makeText(context, "API Key Saved! You can now chat.", Toast.LENGTH_LONG).show()
                         }
