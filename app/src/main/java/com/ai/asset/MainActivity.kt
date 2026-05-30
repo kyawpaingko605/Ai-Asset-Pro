@@ -54,7 +54,7 @@ fun AIAssetProApp(viewModel: AssetViewModel) {
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = if (isDarkTheme) Color(0xFF0F0F0F) else Color.White
+            color = if (isDarkTheme) Color(0xFF121212) else Color(0xFFF5F5F5)
         ) {
             MainChatScreen(viewModel = viewModel)
         }
@@ -92,7 +92,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF0088CC)),
                             contentAlignment = Alignment.Center
@@ -101,16 +101,25 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                                 Icons.Default.AutoAwesome,
                                 contentDescription = "App Logo",
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            "AI Asset Pro",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0088CC)
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "AI Asset Pro",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0088CC)
+                            )
+                            if (!hasValidApiKey) {
+                                Text(
+                                    "API Key required",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
                     }
                 },
                 actions = {
@@ -124,20 +133,20 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     IconButton(onClick = { showApiKeyDialog = true }) {
                         Icon(
                             Icons.Default.VpnKey,
-                            contentDescription = "API Key Settings",
+                            contentDescription = "API Key",
                             tint = Color(0xFF0088CC)
                         )
                     }
                     IconButton(onClick = { viewModel.toggleTheme() }) {
                         Icon(
                             if (viewModel.isDarkTheme.value) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Toggle Theme",
+                            contentDescription = "Theme",
                             tint = Color(0xFF0088CC)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (viewModel.isDarkTheme.value) Color(0xFF1F1F1F) else Color.White
+                    containerColor = if (viewModel.isDarkTheme.value) Color(0xFF1E1E1E) else Color.White
                 )
             )
         }
@@ -147,11 +156,12 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Chat Messages
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (chatMessages.isEmpty()) {
                     item {
@@ -179,6 +189,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
+            // Input Area
             InputArea(
                 inputText = inputText,
                 onInputChange = { inputText = it },
@@ -189,14 +200,19 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         scope.launch {
                             listState.animateScrollToItem(chatMessages.size)
                         }
+                    } else if (!hasValidApiKey) {
+                        Toast.makeText(context, "Please add API Key first", Toast.LENGTH_SHORT).show()
+                        showApiKeyDialog = true
                     }
                 },
                 isEnabled = hasValidApiKey && !isAiLoading,
-                showKeyWarning = !hasValidApiKey
+                showKeyWarning = !hasValidApiKey,
+                onWarningClick = { showApiKeyDialog = true }
             )
         }
     }
     
+    // Model Selector Dialog
     if (showModelSelector) {
         ModelSelectorDialog(
             currentModel = currentModel,
@@ -209,13 +225,14 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         )
     }
     
+    // API Key Dialog
     if (showApiKeyDialog) {
         ApiKeyDialog(
             currentKey = viewModel.geminiApiKey.value,
             onSave = { key ->
                 viewModel.saveApiKey(context, key)
                 showApiKeyDialog = false
-                Toast.makeText(context, "API Key Saved", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "API Key Saved Successfully", Toast.LENGTH_LONG).show()
             },
             onDismiss = { showApiKeyDialog = false }
         )
@@ -226,37 +243,37 @@ fun MainChatScreen(viewModel: AssetViewModel) {
 fun WelcomeCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE3F2FD)
+            containerColor = Color(0xFFE8F0FE)
         )
     ) {
         Column(
-            modifier = Modifier.padding(28.dp),
+            modifier = Modifier.padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(70.dp)
+                    .size(80.dp)
                     .clip(CircleShape)
                     .background(Color(0xFF0088CC)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.Chat,
-                    contentDescription = "Welcome Icon",
+                    Icons.Default.AutoAwesome,
+                    contentDescription = "Welcome",
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(36.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "AI Asset Pro",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0088CC)
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 "Powered by Google Gemini AI",
                 fontSize = 13.sp,
@@ -293,7 +310,7 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
                         bottomEnd = if (isUser) 4.dp else 18.dp
                     )
                 )
-                .background(if (isUser) Color(0xFF0088CC) else Color(0xFFE3F2FD))
+                .background(if (isUser) Color(0xFF0088CC) else Color(0xFFE8F0FE))
                 .clickable { showMenu = !showMenu }
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
@@ -301,12 +318,12 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.AutoAwesome,
-                            contentDescription = "AI Icon",
+                            contentDescription = "AI",
                             modifier = Modifier.size(12.dp),
                             tint = Color(0xFF0088CC)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("AI", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
+                        Text("Gemini AI", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                 }
@@ -334,7 +351,7 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
             onDismissRequest = { showMenu = false }
         ) {
             DropdownMenuItem(
-                text = { Text("Copy", fontSize = 13.sp) },
+                text = { Text("Copy Message", fontSize = 13.sp) },
                 onClick = {
                     onCopy()
                     showMenu = false
@@ -342,7 +359,7 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
                 leadingIcon = {
                     Icon(
                         Icons.Default.ContentCopy,
-                        contentDescription = "Copy Icon",
+                        contentDescription = "Copy",
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -359,17 +376,17 @@ fun TypingIndicator() {
     ) {
         Surface(
             shape = RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp),
-            color = Color(0xFFE3F2FD),
+            color = Color(0xFFE8F0FE),
             modifier = Modifier.widthIn(min = 60.dp)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 repeat(3) {
                     Box(
                         modifier = Modifier
-                            .size(7.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF0088CC))
                     )
@@ -385,44 +402,55 @@ fun InputArea(
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     isEnabled: Boolean,
-    showKeyWarning: Boolean
+    showKeyWarning: Boolean,
+    onWarningClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 4.dp,
-        color = Color.White
-    ) {
-        Column {
-            if (showKeyWarning) {
+    Column {
+        if (showKeyWarning) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .clickable { onWarningClick() },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+            ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFFF3E0))
-                        .padding(10.dp),
+                    modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.VpnKey,
-                            contentDescription = "Key Warning",
+                            contentDescription = "Key",
                             tint = Color(0xFFFF9800),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Add API Key to chat", fontSize = 12.sp, color = Color(0xFFFF9800))
-                    }
-                    IconButton(onClick = { /* Will be handled by parent */ }) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = Color(0xFF0088CC),
                             modifier = Modifier.size(18.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Gemini API Key Required",
+                            fontSize = 13.sp,
+                            color = Color(0xFFFF9800),
+                            fontWeight = FontWeight.Medium
+                        )
                     }
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = "Settings",
+                        tint = Color(0xFFFF9800),
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
-            
+        }
+        
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shadowElevation = 8.dp,
+            tonalElevation = 3.dp,
+            color = if (isEnabled) Color.White else Color(0xFFF5F5F5)
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -435,8 +463,9 @@ fun InputArea(
                     onValueChange = onInputChange,
                     placeholder = {
                         Text(
-                            if (isEnabled) "Message AI Asset Pro..." else "Enter API Key first",
-                            fontSize = 14.sp
+                            if (isEnabled) "Type a message..." else "Enter API Key to start",
+                            fontSize = 14.sp,
+                            color = Color.Gray
                         )
                     },
                     modifier = Modifier.weight(1f),
@@ -447,26 +476,29 @@ fun InputArea(
                         focusedBorderColor = Color(0xFF0088CC),
                         unfocusedBorderColor = Color(0xFFE0E0E0),
                         focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color(0xFFF5F5F5)
                     )
                 )
                 
-                IconButton(
-                    onClick = onSend,
-                    enabled = inputText.isNotBlank() && isEnabled,
+                Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(
                             if (inputText.isNotBlank() && isEnabled) Color(0xFF0088CC) 
                             else Color(0xFFE0E0E0)
                         )
+                        .clickable(enabled = inputText.isNotBlank() && isEnabled) {
+                            onSend()
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Default.Send,
-                        contentDescription = "Send Message",
+                        contentDescription = "Send",
                         tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -483,15 +515,23 @@ fun ModelSelectorDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select AI Model", fontWeight = FontWeight.Bold) },
+        title = { 
+            Text(
+                "Select AI Model", 
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0088CC)
+            ) 
+        },
         text = {
             Column {
                 models.forEach { model ->
                     val displayName = model.replace("models/", "")
-                        .replace("gemini-", "Gemini ")
+                        .replace("gemini-", "")
                         .replace("-pro", " Pro")
                         .replace("-flash", " Flash")
                         .replace("-vision", " Vision")
+                        .replace("1.5", "1.5")
+                        .trim()
                     
                     Card(
                         modifier = Modifier
@@ -502,20 +542,36 @@ fun ModelSelectorDialog(
                             containerColor = if (currentModel == model) 
                                 Color(0xFF0088CC).copy(alpha = 0.1f) 
                             else Color.Transparent
-                        )
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(displayName, fontSize = 14.sp)
+                            Column {
+                                Text(
+                                    displayName,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (currentModel == model) FontWeight.Bold else FontWeight.Normal
+                                )
+                                Text(
+                                    when {
+                                        model.contains("pro") -> "Best for complex tasks"
+                                        model.contains("flash") -> "Fast & efficient"
+                                        else -> "Balanced performance"
+                                    },
+                                    fontSize = 10.sp,
+                                    color = Color.Gray
+                                )
+                            }
                             if (currentModel == model) {
                                 Icon(
                                     Icons.Default.CheckCircle,
-                                    contentDescription = "Selected Model",
+                                    contentDescription = "Selected",
                                     tint = Color(0xFF0088CC),
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -528,7 +584,7 @@ fun ModelSelectorDialog(
                 Text("Close", color = Color(0xFF0088CC))
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(20.dp)
     )
 }
 
@@ -543,7 +599,13 @@ fun ApiKeyDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Gemini API Key", fontWeight = FontWeight.Bold) },
+        title = { 
+            Text(
+                "Gemini API Key", 
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0088CC)
+            ) 
+        },
         text = {
             Column {
                 Text(
@@ -556,7 +618,7 @@ fun ApiKeyDialog(
                     fontSize = 11.sp,
                     color = Color(0xFF0088CC)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
                     value = keyInput,
@@ -577,10 +639,10 @@ fun ApiKeyDialog(
                     }
                 )
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = "🔒 Your key is stored securely on your device",
+                    text = "🔒 Your key is stored securely on your device only",
                     fontSize = 10.sp,
                     color = Color.Gray
                 )
@@ -588,11 +650,16 @@ fun ApiKeyDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onSave(keyInput) },
+                onClick = { 
+                    if (keyInput.isNotBlank()) {
+                        onSave(keyInput)
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0088CC)),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Save API Key", color = Color.White, fontSize = 13.sp)
+                Text("Save API Key", color = Color.White, fontSize = 14.sp)
             }
         },
         dismissButton = {
@@ -600,6 +667,6 @@ fun ApiKeyDialog(
                 Text("Cancel", color = Color.Gray)
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(20.dp)
     )
 }
