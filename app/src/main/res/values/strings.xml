@@ -6,4 +6,22 @@
     <string name="send">Send</string>
     <string name="ai_thinking">AI is thinking...</string>
     <string name="welcome_message">Welcome to AI Asset Pro</string>
+
+    <string name="ai_ready">AI Ready</string>
+    <string name="api_key_required">API Key Required</string>
+    <string name="ask_anything">Ask me anything…</string>
+    <string name="ask_about_image">Ask about this image…</string>
+    <string name="enter_api_key_first">Enter API Key first</string>
+    <string name="tap_to_enter_key">Tap here to add Gemini API Key to start chatting</string>
+    
+    <string name="select_ai_engine">Select AI Engine</string>
+    <string name="setup_gemini_key">Setup Gemini Key</string>
+    <string name="save_configuration">Save Configuration</string>
+    <string name="cancel">Cancel</string>
+    <string name="copy_text">Copy Text</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+
+    <string name="next_gen_assistant">Next-Gen Multimodal Smart Assistant</string>
+    <string name="try_asking">Try asking these:</string>
+    <string name="secure_storage_note">🔒 Your key is stored securely on your device only</string>
 </resources>
