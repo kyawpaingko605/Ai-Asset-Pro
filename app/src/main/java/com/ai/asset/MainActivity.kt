@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,8 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,7 +76,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
     
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val isAiLoading by viewModel.isAiLoading.collectAsStateWithLifecycle()
-    val geminiApiKey by viewModel.geminiApiKey.collectAsStateWithLifecycle()
+    val hasValidApiKey by viewModel.hasValidApiKey.collectAsStateWithLifecycle()
     val currentModel by viewModel.currentModel.collectAsStateWithLifecycle()
     val availableModels = viewModel.availableModels
     
@@ -97,16 +98,25 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                                 .background(Color(0xFF0088CC)),
                             contentAlignment = Alignment.Center
                         ) {
-                            // ✨ AI Brain အိုင်ကွန်သို့ ပြောင်းလဲထားပါသည်
-                            Icon(Icons.Default.Psychology, contentDescription = "AI Logo", tint = Color.White, modifier = Modifier.size(24.dp))
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = "Logo",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("AI Asset Pro", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
                             Text(
-                                if (geminiApiKey.isNotBlank()) "● AI Ready" else "⚠️ Set API Key First",
+                                "AI Asset Pro",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0088CC)
+                            )
+                            Text(
+                                if (hasValidApiKey) "● AI Ready" else "⚠️ API Key Required",
                                 fontSize = 11.sp,
-                                color = if (geminiApiKey.isNotBlank()) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                                color = if (hasValidApiKey) Color(0xFF4CAF50) else Color(0xFFFF9800)
                             )
                         }
                     }
@@ -137,7 +147,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Chat Area
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -145,7 +154,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (chatMessages.isEmpty()) {
-                    item { WelcomeCard() }
+                    item { WelcomeCard(hasValidApiKey) }
                 }
                 
                 items(chatMessages, key = { it.id }) { message ->
@@ -163,7 +172,30 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // Input Area
+            if (!hasValidApiKey) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                        .clickable { showApiKeyDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.VpnKey, contentDescription = "Key", tint = Color(0xFFFF9800), modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Add Gemini API Key to start chatting", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFFFF9800))
+                        }
+                        Icon(Icons.Default.ArrowForward, contentDescription = "Go", tint = Color(0xFFFF9800), modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+            
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp,
@@ -179,9 +211,16 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        placeholder = { Text("Type your message here...", fontSize = 14.sp, color = Color.Gray) },
+                        placeholder = {
+                            Text(
+                                if (hasValidApiKey) "Type your message..." else "Enter API Key first",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(28.dp),
+                        enabled = true,
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFF0088CC),
@@ -191,29 +230,41 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         )
                     )
                     
+                    // ✨ FIX: စာရိုက်လိုက်တာနဲ့ အပြာရောင်ပြောင်းပြီး Telegram လို မြှားစောင်းပုံစံ ခလုတ်ဖြစ်အောင် ပြင်ထားပါတယ်
                     Button(
                         onClick = {
-                            if (inputText.isNotBlank() && !isAiLoading) {
+                            if (inputText.isNotBlank() && hasValidApiKey && !isAiLoading) {
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
-                                scope.launch { listState.animateScrollToItem(chatMessages.size) }
+                                scope.launch {
+                                    listState.animateScrollToItem(chatMessages.size)
+                                }
+                            } else if (!hasValidApiKey) {
+                                Toast.makeText(context, "Please add API Key first", Toast.LENGTH_SHORT).show()
+                                showApiKeyDialog = true
                             }
                         },
-                        modifier = Modifier.size(48.dp).clip(CircleShape),
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (inputText.isNotBlank()) Color(0xFF0088CC) else Color(0xFFE0E0E0)
                         ),
                         shape = CircleShape,
                         enabled = inputText.isNotBlank() && !isAiLoading
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send, // ✨ Telegram ပုံစံ မြှားစောင်းလေး
+                            contentDescription = "Send",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
             }
         }
     }
     
-    // Model Selector Dialog
     if (showModelSelector) {
         AlertDialog(
             onDismissRequest = { showModelSelector = false },
@@ -221,16 +272,28 @@ fun MainChatScreen(viewModel: AssetViewModel) {
             text = {
                 Column {
                     availableModels.forEach { model ->
-                        val displayName = model.replace("gemini-", "Gemini ").replace("-pro", " Pro").replace("-flash", " Flash")
+                        val displayName = model.replace("gemini-", "Gemini ")
+                            .replace("-pro", " Pro")
+                            .replace("-flash", " Flash")
+                        
                         Card(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable {
-                                viewModel.updateModel(model)
-                                showModelSelector = false
-                            },
-                            colors = CardDefaults.cardColors(containerColor = if (currentModel == model) Color(0xFF0088CC).copy(alpha = 0.1f) else Color.Transparent),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    viewModel.updateModel(model)
+                                    showModelSelector = false
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (currentModel == model) Color(0xFF0088CC).copy(alpha = 0.1f) else Color.Transparent
+                            ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(displayName, fontSize = 14.sp, fontWeight = if (currentModel == model) FontWeight.Bold else FontWeight.Normal)
                                 if (currentModel == model) {
                                     Icon(Icons.Default.CheckCircle, contentDescription = "Selected", tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
@@ -240,72 +303,107 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showModelSelector = false }) { Text("Close", color = Color(0xFF0088CC)) } },
+            confirmButton = {
+                TextButton(onClick = { showModelSelector = false }) {
+                    Text("Close", color = Color(0xFF0088CC))
+                }
+            },
             shape = RoundedCornerShape(16.dp)
         )
     }
     
-    // API Key Dialog
     if (showApiKeyDialog) {
-        val currentSavedKey by viewModel.geminiApiKey.collectAsStateWithLifecycle()
-        var keyInput by remember { mutableStateOf(currentSavedKey) }
+        var keyInput by remember { mutableStateOf(viewModel.geminiApiKey.value) }
         var showKey by remember { mutableStateOf(false) }
         
         AlertDialog(
             onDismissRequest = { showApiKeyDialog = false },
-            title = { Text("Gemini API Key Settings", fontWeight = FontWeight.Bold, color = Color(0xFF0088CC)) },
+            title = { Text("Gemini API Key", fontWeight = FontWeight.Bold, color = Color(0xFF0088CC)) },
             text = {
                 Column {
-                    Text("Get free key from aistudio.google.com", fontSize = 12.sp, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Get your free API key from:", fontSize = 12.sp, color = Color.Gray)
+                    Text("https://aistudio.google.com", fontSize = 11.sp, color = Color(0xFF0088CC))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
                     OutlinedTextField(
                         value = keyInput,
                         onValueChange = { keyInput = it },
-                        placeholder = { Text("Enter AIzaSy Key...", fontSize = 13.sp) },
+                        placeholder = { Text("AIzaSy...", fontSize = 13.sp) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         trailingIcon = {
-                            TextButton(onClick = { showKey = !showKey }) { Text(if (showKey) "Hide" else "Show", fontSize = 11.sp) }
+                            TextButton(onClick = { showKey = !showKey }) {
+                                Text(if (showKey) "Hide" else "Show", fontSize = 11.sp)
+                            }
                         },
-                        visualTransformation = if (showKey) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation()
+                        visualTransformation = if (showKey) {
+                            androidx.compose.ui.text.input.VisualTransformation.None
+                        } else {
+                            androidx.compose.ui.text.input.PasswordVisualTransformation()
+                        }
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("🔒 Your key is stored securely on your device only", fontSize = 10.sp, color = Color.Gray)
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.saveApiKey(context, keyInput.trim())
-                        showApiKeyDialog = false
-                        Toast.makeText(context, "Key Configuration Updated", Toast.LENGTH_SHORT).show()
+                        if (keyInput.isNotBlank()) {
+                            viewModel.saveApiKey(context, keyInput)
+                            showApiKeyDialog = false
+                            Toast.makeText(context, "API Key Saved! You can now chat.", Toast.LENGTH_LONG).show()
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0088CC)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Save Settings", color = Color.White) }
+                ) {
+                    Text("Save API Key", color = Color.White)
+                }
             },
-            dismissButton = { TextButton(onClick = { showApiKeyDialog = false }) { Text("Cancel", color = Color.Gray) } },
+            dismissButton = {
+                TextButton(onClick = { showApiKeyDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
             shape = RoundedCornerShape(16.dp)
         )
     }
 }
 
 @Composable
-fun WelcomeCard() {
+fun WelcomeCard(hasValidApiKey: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0FE))
     ) {
-        Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFF0088CC)), contentAlignment = Alignment.Center) {
-                // Welcome Card အိုင်ကွန်ကိုပါ AI Brain ပုံစံ ပြောင်းလဲထားပါသည်
-                Icon(Icons.Default.Psychology, contentDescription = "AI Logo", tint = Color.White, modifier = Modifier.size(44.dp))
+        Column(
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF0088CC)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = "App Logo", tint = Color.White, modifier = Modifier.size(40.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text("AI Asset Pro", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Ready to chat with Gemini AI", fontSize = 14.sp, color = Color.Gray)
+            Text("Powered by Google Gemini AI", fontSize = 14.sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "✨ Multiple AI Models Available\n💾 Chat History Saved Locally\n🎨 Dark/Light Mode\n🌐 Supports Burmese Language",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                lineHeight = 22.sp
+            )
         }
     }
 }
@@ -314,30 +412,57 @@ fun WelcomeCard() {
 fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
     val isUser = message.isUser
     var showMenu by remember { mutableStateOf(false) }
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start) {
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+    ) {
         Box(
             modifier = Modifier
                 .widthIn(max = 280.dp)
-                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = if (isUser) 18.dp else 4.dp, bottomEnd = if (isUser) 4.dp else 18.dp))
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 18.dp,
+                        topEnd = 18.dp,
+                        bottomStart = if (isUser) 18.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 18.dp
+                    )
+                )
                 .background(if (isUser) Color(0xFF0088CC) else Color(0xFFE8F0FE))
                 .clickable { showMenu = !showMenu }
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
+                if (!isUser) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = "AI", modifier = Modifier.size(12.dp), tint = Color(0xFF0088CC))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Gemini AI", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0088CC))
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Text(text = message.text, fontSize = 14.sp, color = if (isUser) Color.White else Color(0xFF1A1A1A), lineHeight = 20.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = message.formattedTime, fontSize = 9.sp, color = if (isUser) Color.White.copy(alpha = 0.7f) else Color.Gray, modifier = Modifier.align(Alignment.End))
             }
         }
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-            DropdownMenuItem(text = { Text("Copy") }, onClick = { onCopy(); showMenu = false })
+            DropdownMenuItem(
+                text = { Text("Copy", fontSize = 13.sp) },
+                onClick = { onCopy(); showMenu = false },
+                leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(18.dp)) }
+            )
         }
     }
 }
 
 @Composable
 fun TypingIndicator() {
-    Row(modifier = Modifier.padding(start = 12.dp)) {
-        Surface(shape = RoundedCornerShape(18.dp), color = Color(0xFFE8F0FE)) {
+    Row(modifier = Modifier.padding(start = 12.dp), horizontalArrangement = Arrangement.Start) {
+        Surface(shape = RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp), color = Color(0xFFE8F0FE), modifier = Modifier.widthIn(min = 60.dp)) {
             Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                repeat(3) { Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF0088CC))) }
+                repeat(3) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF0088CC)))
+                }
             }
         }
     }
