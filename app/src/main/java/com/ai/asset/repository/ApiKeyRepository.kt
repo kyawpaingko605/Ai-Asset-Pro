@@ -1,35 +1,38 @@
 package com.ai.asset.repository
-    
-import com.ai.asset.repository.ApiKeyRepository
-import com.ai.asset.repository.ChatHistoryRepository
+
 import android.content.Context
 import android.content.SharedPreferences
 
-class ApiKeyRepository(private val context: Context) {
+class ApiKeyRepository(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(
         "ai_asset_pro_prefs", 
         Context.MODE_PRIVATE
     )
     
+    // API Key ကို ပိုပြီးလုံခြုံအောင် သိမ်းဆည်းရန် ကြိုးစားခြင်း
     fun saveApiKey(key: String) {
-        prefs.edit().putString("gemini_api_key", key).apply()
+        prefs.edit().putString("gemini_api_key", key.trim()).apply()
     }
     
     fun getApiKey(): String {
         return prefs.getString("gemini_api_key", "") ?: ""
     }
     
+    // ✨ FIX: "AIza" ဆိုတဲ့ စာသားနဲ့ မစစ်ဆေးတော့ပါ (Key အမျိုးအစားသစ်တွေအတွက်ပါ)
     fun hasValidApiKey(): Boolean {
-        val key = getApiKey()
-        return key.isNotEmpty() && key.startsWith("AIza") && key.length > 20
+        val key = getApiKey().trim()
+        return key.length > 20 
     }
     
     fun saveSelectedModel(model: String) {
-        prefs.edit().putString("selected_model", model).apply()
+        // ✨ FIX: 'models/' ပါနေရင် ဖယ်ထုတ်ပြီးမှ သိမ်းပါ
+        val cleanModel = model.replace("models/", "")
+        prefs.edit().putString("selected_model", cleanModel).apply()
     }
     
     fun getSelectedModel(): String {
-        return prefs.getString("selected_model", "models/gemini-1.5-pro") ?: "models/gemini-1.5-pro"
+        // ✨ FIX: default ကို 'models/' မပါဘဲ သိမ်းပါ
+        return prefs.getString("selected_model", "gemini-1.5-flash") ?: "gemini-1.5-flash"
     }
     
     fun saveThemePreference(isDark: Boolean) {
@@ -38,9 +41,5 @@ class ApiKeyRepository(private val context: Context) {
     
     fun getThemePreference(): Boolean {
         return prefs.getBoolean("dark_theme", false)
-    }
-    
-    fun clearAll() {
-        prefs.edit().clear().apply()
     }
 }
