@@ -18,9 +18,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // ✨ FEATURE: ကုဒ်တွေကို သူခိုးမခိုးနိုင်အောင်နဲ့ App Size သေးသွားအောင် ကာကွယ်တဲ့စနစ် ဖွင့်လိုက်ပါတယ်
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt")
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
             )
         }
     }
@@ -70,4 +73,7 @@ dependencies {
     
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // ✨ ADDED: ဓါတ်ပုံတွေကို Premium ဆန်ဆန် ပြသပေးမည့် Coil Library ကို ဖြည့်စွက်ထားပါတယ်
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }
