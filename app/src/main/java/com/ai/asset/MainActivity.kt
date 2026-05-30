@@ -99,7 +99,7 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                         ) {
                             Icon(
                                 Icons.Default.AutoAwesome,
-                                contentDescription = null,
+                                contentDescription = "App Logo",
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -115,15 +115,23 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 },
                 actions = {
                     IconButton(onClick = { showModelSelector = true }) {
-                        Icon(Icons.Default.ModelTraining, contentDescription = "Model", tint = Color(0xFF0088CC))
+                        Icon(
+                            Icons.Default.ModelTraining,
+                            contentDescription = "Select Model",
+                            tint = Color(0xFF0088CC)
+                        )
                     }
                     IconButton(onClick = { showApiKeyDialog = true }) {
-                        Icon(Icons.Default.VpnKey, contentDescription = "API Key", tint = Color(0xFF0088CC))
+                        Icon(
+                            Icons.Default.VpnKey,
+                            contentDescription = "API Key Settings",
+                            tint = Color(0xFF0088CC)
+                        )
                     }
                     IconButton(onClick = { viewModel.toggleTheme() }) {
                         Icon(
                             if (viewModel.isDarkTheme.value) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Theme",
+                            contentDescription = "Toggle Theme",
                             tint = Color(0xFF0088CC)
                         )
                     }
@@ -139,7 +147,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Chat Messages
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -172,7 +179,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
                 }
             }
             
-            // Input Area
             InputArea(
                 inputText = inputText,
                 onInputChange = { inputText = it },
@@ -191,7 +197,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         }
     }
     
-    // Model Selector Dialog
     if (showModelSelector) {
         ModelSelectorDialog(
             currentModel = currentModel,
@@ -204,7 +209,6 @@ fun MainChatScreen(viewModel: AssetViewModel) {
         )
     }
     
-    // API Key Dialog (တစ်နေရာတည်း)
     if (showApiKeyDialog) {
         ApiKeyDialog(
             currentKey = viewModel.geminiApiKey.value,
@@ -238,7 +242,12 @@ fun WelcomeCard() {
                     .background(Color(0xFF0088CC)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(
+                    Icons.Default.Chat,
+                    contentDescription = "Welcome Icon",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -292,7 +301,7 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.AutoAwesome,
-                            contentDescription = null,
+                            contentDescription = "AI Icon",
                             modifier = Modifier.size(12.dp),
                             tint = Color(0xFF0088CC)
                         )
@@ -330,7 +339,13 @@ fun ChatBubble(message: ChatMessage, onCopy: () -> Unit) {
                     onCopy()
                     showMenu = false
                 },
-                leadingIcon = { Icon(Icons.Default.ContentCopy, modifier = Modifier.size(18.dp)) }
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copy Icon",
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             )
         }
     }
@@ -388,12 +403,22 @@ fun InputArea(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.VpnKey, tint = Color(0xFFFF9800), modifier = Modifier.size(16.dp))
+                        Icon(
+                            Icons.Default.VpnKey,
+                            contentDescription = "Key Warning",
+                            tint = Color(0xFFFF9800),
+                            modifier = Modifier.size(16.dp)
+                        )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Add API Key to chat", fontSize = 12.sp, color = Color(0xFFFF9800))
                     }
                     IconButton(onClick = { /* Will be handled by parent */ }) {
-                        Icon(Icons.Default.Settings, tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = Color(0xFF0088CC),
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
@@ -439,7 +464,7 @@ fun InputArea(
                 ) {
                     Icon(
                         Icons.Default.Send,
-                        contentDescription = "Send",
+                        contentDescription = "Send Message",
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
@@ -486,7 +511,12 @@ fun ModelSelectorDialog(
                         ) {
                             Text(displayName, fontSize = 14.sp)
                             if (currentModel == model) {
-                                Icon(Icons.Default.CheckCircle, tint = Color(0xFF0088CC), modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = "Selected Model",
+                                    tint = Color(0xFF0088CC),
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }
