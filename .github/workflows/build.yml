@@ -1,4 +1,4 @@
-name: Build APK
+name: 🚀 Build APK
 
 on:
   push:
@@ -10,30 +10,33 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up JDK 17
+      - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: temurin
       
-      - name: Setup Gradle
+      - name: 🔧 Setup Gradle
         uses: gradle/actions/setup-gradle@v3
       
-      - name: Grant execute permission
+      - name: 🔓 Grant execute permission
         run: chmod +x gradlew
       
-      - name: Clean project
+      - name: 🧹 Clean project
         run: ./gradlew clean
       
-      - name: Build Debug APK
+      - name: 🔨 Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
       
-      - name: Upload APK
+      - name: 📦 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: 📱 AI-Asset-Pro-Debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
+      
+      - name: ✅ Build Complete
+        run: echo "🎉 Build completed successfully! Download APK from Artifacts 🎉"
